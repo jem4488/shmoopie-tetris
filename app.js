@@ -9,6 +9,7 @@ var pieces = [{shape: [[1,1,0], [0,1,1]], color: 0},
    {shape: [[1,0], [1,0], [1,1]], color: 4},
    {shape: [[0,1], [0,1], [1,1]], color: 5},
    {shape: [[0,1,0], [1,1,1]], color: 6}];
+var KEY = {LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40 }
 
 var board;
 
@@ -16,43 +17,70 @@ var piece;
 var xOffset = 4;
 var yOffset = 0;
 var timer;
+var playing = false;
 
 function startGame() {
+   document.addEventListener('keydown', keydown, false);
    console.log("Starting board setup.")
+   playing = true;
    boardSetup();
    piece = getRandomPiece();
    startFallingPiece();
 }
 
-
+function keydown(ev) {
+   var handled = false;
+   if (playing) {
+      switch(ev.keyCode) {
+         case KEY.LEFT:   movePiece(-1, 0);  handled = true; break;
+         case KEY.RIGHT:  movePiece(1, 0); handled = true; break;
+         case KEY.UP:     dropPiece();    handled = true; break;
+         case KEY.DOWN:   movePieceDown();  handled = true; break;          
+      }
+   }      
+   if (handled)
+      ev.preventDefault(); // prevent arrow keys from scrolling the page (supported in IE9+ and all other browsers)
+}
 
 function startFallingPiece() {
    drawPiece();
-   timer = window.setInterval(movePiece, 1000);
+   timer = window.setInterval(movePieceDown, 1000);
 }
 
-function movePiece() {
-   if (canPieceMove(0, 1))
-   {
-      clearPiece(piece, xOffset, yOffset);
-      yOffset += 1;
-      drawPiece(piece, xOffset, yOffset);
-   }  
-   else
+function dropPiece() {
+   while(movePieceDown()){}
+}
+
+function movePieceDown() {
+   if (!movePiece(0, 1))
    {
       window.clearInterval(timer);
       //check cleared lines
       if (yOffset == 0)
       {
          //End the Game.
-         return;
+         return false;;
       }
       addPieceToBoard();
       piece = getRandomPiece();
       xOffset = 4;
       yOffset = 0;
       startFallingPiece();
-   } 
+      return false;
+   }
+   return true;
+}
+
+function movePiece(changeX, changeY) {
+   if (canPieceMove(changeX, changeY))
+   {
+      clearPiece(piece, xOffset, yOffset);
+      yOffset += changeY;
+      xOffset += changeX;
+      drawPiece();
+      return true;
+   }
+   return false;  
 }
 
 function clearBlock(x, y) {
@@ -76,6 +104,10 @@ function drawBlock(x, y, color) {
    var board = getGameBoard();
    board.fillStyle = color;
    board.fillRect(x * tetriminoSize, y * tetriminoSize, tetriminoSize, tetriminoSize);
+
+   //var img = new Image();
+   //img.src = 'tetrimino.jpg';
+   //board.drawImage(img, x * tetriminoSize, y * tetriminoSize);
 }
 
 function drawPiece()
@@ -93,7 +125,14 @@ function drawPiece()
 
 function canPieceMove(changeX, changeY)
 {
-   if (yOffset + piece.shape.length >= boardHeight)
+   var bottom = yOffset + piece.shape.length;
+   var right = xOffset + piece.shape[0].length;
+
+   if (bottom >= boardHeight)
+      return false;
+   else if (changeX > 0 && right >= 10)
+      return false;
+   else if (changeX < 0 && xOffset <= 0)
       return false;
    else if (detectPieceCollision(changeX, changeY))
       return false;
