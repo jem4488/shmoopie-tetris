@@ -21,6 +21,7 @@ var yOffset = 0;
 var timer;
 var playing = false;
 var totalLinesCleared = 0;
+var pieces = [];
 
 function startGame() {
    document.addEventListener('keydown', keydown, false);
@@ -29,7 +30,9 @@ function startGame() {
    totalLinesCleared = 0;
    clearCanvas();
    boardSetup();
-   setRandomPiece();
+   populatePieces(3);
+   piece = getNextPiece();
+   console.log(piece);
    startFallingPiece();
 }
 
@@ -50,7 +53,7 @@ function keydown(ev) {
 }
 
 function startFallingPiece() {
-   drawPiece();
+   drawPiece(getGameBoard(), piece, xOffset, yOffset);
    timer = window.setInterval(movePieceDown, 1000);
 }
 
@@ -72,7 +75,7 @@ function movePieceDown() {
          return false;;
       }
 
-      setRandomPiece();
+      piece = getNextPiece();
       xOffset = 4;
       yOffset = 0;
       startFallingPiece();
@@ -87,7 +90,7 @@ function movePiece(changeX, changeY) {
       clearPiece(piece, xOffset, yOffset);
       yOffset += changeY;
       xOffset += changeX;
-      drawPiece();
+      drawPiece(getGameBoard(), piece, xOffset, yOffset);
       return true;
    }
    return false;  
@@ -104,7 +107,7 @@ function rotatePiece(direction) {
    clearPiece();
    piece.shape = rotations[piece.color][newRotationIndex];
    piece.rotationIndex = newRotationIndex;
-   drawPiece();
+   drawPiece(getGameBoard(), piece, xOffset, yOffset);
 }
 
 function clearBlock(x, y) {
@@ -124,25 +127,31 @@ function clearPiece()
    }
 }
 
-function drawBlock(x, y, color) {
-   var board = getGameBoard();
-   board.fillStyle = color;
-   board.fillRect(x * tetriminoSize, y * tetriminoSize, tetriminoSize, tetriminoSize);
-
-   //var img = new Image();
-   //img.src = 'tetrimino.jpg';
-   //board.drawImage(img, x * tetriminoSize, y * tetriminoSize);
+function drawBlock(canvas, x, y, color, scale) {
+   scale = scale || 1;
+   //var board = getGameBoard();
+   //if (color != colors[0]) {
+      canvas.fillStyle = color;
+      canvas.fillRect(x * tetriminoSize * scale, y * tetriminoSize * scale, tetriminoSize * scale, tetriminoSize * scale);   
+   //}
+   //else {
+   //   var img = new Image();
+   //   img.src = 'redTetrimino.jpg';
+   //   board.drawImage(img, x * tetriminoSize, y * tetriminoSize);
+   //}   
 }
 
-function drawPiece()
+function drawPiece(canvas, piece, xOffset, yOffset, scale)
 {
+   console.log("Drawing piece to scale: " + scale);
+   scale = scale || 1;
    //console.log("Drawing piece Row:" + yOffset + " Column:" + xOffset);
    for(var y = 0; y < piece.shape.length; y++)
    {
       for(var x = 0; x < piece.shape[y].length; x++)
       {
          if (piece.shape[y][x] == 1)
-            drawBlock(x + xOffset, y + yOffset, colors[piece.color]);
+            drawBlock(canvas, x + xOffset, y + yOffset, colors[piece.color], scale);
       }
    }
 }
@@ -232,16 +241,17 @@ function scoreLine(rowIndex, linesCleared)
 
 }
 
-function setRandomPiece() {
+function getNextPiece()
+{
+   var nextPiece = pieces.shift();
+   pieces.push(getRandomPiece());
+   drawPiecePreview();
+   return nextPiece;
+}
+
+function getRandomPiece() {
    var pieceIndex = Math.floor(Math.random() * 1000) % 7;
-   piece = {shape: rotations[pieceIndex][0], rotationIndex: 0, color: pieceIndex};
-   //return {shape: [[1,1,0], [0,1,1]], color: 0};
-   //return {shape: [[0,1,1], [1,1,0]], color: 1};
-   //return {shape: [[1,1], [1,1]], color: 2};
-   //return {shape: [[1], [1], [1], [1]], color: 3};
-   //return {shape: [[1,0], [1,0], [1,1]], color: 4};
-   //return {shape: [[0,1], [0,1], [1,1]], color: 5};
-   //return {shape: [[0,1,0], [1,1,1]], color: 6};
+   return {shape: rotations[pieceIndex][0], rotationIndex: 0, color: pieceIndex};      
 }
 
 function getGameBoard() {
@@ -271,9 +281,29 @@ function redrawBoard() {
       {
          if (board[y][x] >= 0)
          {
-            drawBlock(x, y, colors[board[y][x]]);
+            drawBlock(getGameBoard(), x, y, colors[board[y][x]]);
          }
       }
+   }
+}
+
+function drawPiecePreview() {
+   var preview = getPreviewCanvas();
+   preview.clearRect(0, 0, 5 * tetriminoSize/2, 16 * tetriminoSize/2);
+   var pieceCount = 0;
+   while(pieceCount < pieces.length)
+   {
+      drawPiece(preview, pieces[pieceCount], 1, pieceCount * 5 + 1, .5);
+      pieceCount++;
+   }
+}
+
+function populatePieces(count)
+{
+   for(var i = 0; i < count; i++)
+   {
+      var randomPiece = getRandomPiece();
+      pieces.push(randomPiece);
    }
 }
 
@@ -308,4 +338,11 @@ function logBoard() {
       s = s + "\r\n";
    }
    return s;
+}
+
+function getPreviewCanvas()
+{
+   var c = document.getElementById("piecePreview");
+   var ctx = c.getContext("2d");
+   return ctx;
 }
