@@ -2,6 +2,7 @@
 var tetriminoSize = 40;
 var boardHeight = 16;
 var colors = ["#E60000", "#00E600", "#FFFF47", "#75FFFF", "#0033CC", "#FF9933", "#CC33FF"];
+var images = ["redTetrimino.jpg", "greenTetrimino.jpg", "yellowTetrimino.jpg", "tealTetrimino.jpg", "blueTetrimino.jpg", "orangeTetrimino.jpg", "purpleTetrimino.jpg"];
 var rotations = [
    [[[1,1,0], [0,1,1]], [[0,1],[1,1],[1,0]]], // red z
    [[[0,1,1], [1,1,0]], [[1,0],[1,1],[0,1]]], // green s
@@ -22,6 +23,8 @@ var timer;
 var playing = false;
 var totalLinesCleared = 0;
 var pieces = [];
+var attackPoints = [0, 0, 0, 0, 0, 0, 0];
+var accumulatorPoints = [0, 0, 0, 0, 0, 0, 0];
 
 function startGame() {
    document.addEventListener('keydown', keydown, false);
@@ -34,6 +37,8 @@ function startGame() {
    piece = getNextPiece();
    console.log(piece);
    startFallingPiece();
+   console.log(attackPoints);
+   console.log(accumulatorPoints);
 }
 
 function keydown(ev) {
@@ -127,23 +132,17 @@ function clearPiece()
    }
 }
 
-function drawBlock(canvas, x, y, color, scale) {
+function drawBlock(canvas, x, y, colorIndex, scale) {
    scale = scale || 1;
-   //var board = getGameBoard();
-   //if (color != colors[0]) {
-      canvas.fillStyle = color;
-      canvas.fillRect(x * tetriminoSize * scale, y * tetriminoSize * scale, tetriminoSize * scale, tetriminoSize * scale);   
-   //}
-   //else {
-   //   var img = new Image();
-   //   img.src = 'redTetrimino.jpg';
-   //   board.drawImage(img, x * tetriminoSize, y * tetriminoSize);
-   //}   
+      
+      var img = new Image();
+      img.src = images[colorIndex]; //'redTetrimino.jpg';
+      canvas.drawImage(img, x * tetriminoSize * scale, y * tetriminoSize * scale, tetriminoSize * scale, tetriminoSize * scale);
 }
 
 function drawPiece(canvas, piece, xOffset, yOffset, scale)
 {
-   console.log("Drawing piece to scale: " + scale);
+   //console.log("Drawing piece to scale: " + scale);
    scale = scale || 1;
    //console.log("Drawing piece Row:" + yOffset + " Column:" + xOffset);
    for(var y = 0; y < piece.shape.length; y++)
@@ -151,7 +150,7 @@ function drawPiece(canvas, piece, xOffset, yOffset, scale)
       for(var x = 0; x < piece.shape[y].length; x++)
       {
          if (piece.shape[y][x] == 1)
-            drawBlock(canvas, x + xOffset, y + yOffset, colors[piece.color], scale);
+            drawBlock(canvas, x + xOffset, y + yOffset, piece.color, scale);
       }
    }
 }
@@ -228,6 +227,9 @@ function clearLines()
    }
    console.log("Lines cleared by piece: " + linesCleared);
    console.log("Total lines cleared: " + totalLinesCleared);
+   attack();
+   console.log("Accumulator Totals:");
+   console.log(accumulatorPoints);
 }
 
 function clearLine(rowIndex)
@@ -238,7 +240,57 @@ function clearLine(rowIndex)
 
 function scoreLine(rowIndex, linesCleared)
 {
+   console.log("Scoring line");
+   console.log(attackPoints);
+   console.log(accumulatorPoints);
 
+   var counts = calculateTetriminoColors(rowIndex);
+   calculateAttackPoints(counts);
+   calculateAccumulatorPoints(counts, linesCleared);
+
+   console.log("Finished Scoring");
+   console.log(attackPoints);
+   console.log(accumulatorPoints);
+}
+
+function calculateTetriminoColors(rowIndex)
+{
+   var tetriminoCounts = [0, 0, 0, 0, 0, 0, 0];
+   for(var x = 0; x < 10; x++)
+   {
+      tetriminoCounts[board[rowIndex][x]] += 1;
+   }
+   return tetriminoCounts;
+}
+
+function calculateAttackPoints(counts)
+{
+   for(var i = 0; i < counts.length; i++)
+   {
+      console.log("Adding " + counts[i] + " points to index " + i);
+      attackPoints[i] = attackPoints[i] + counts[i];
+      console.log(attackPoints);
+   }
+}
+
+function calculateAccumulatorPoints(counts, linesCleared)
+{
+   if (linesCleared >= 2)
+   {
+      for(var i = 0; i < counts.length; i++)
+      {
+         accumulatorPoints[i] = accumulatorPoints[i] + counts[i] * linesCleared;
+      }
+   }
+}
+
+function attack()
+{
+   //dispense damage
+   console.log("Attack");
+   console.log(attackPoints);
+
+   attackPoints = [0, 0, 0, 0, 0, 0, 0];
 }
 
 function getNextPiece()
@@ -281,7 +333,7 @@ function redrawBoard() {
       {
          if (board[y][x] >= 0)
          {
-            drawBlock(getGameBoard(), x, y, colors[board[y][x]]);
+            drawBlock(getGameBoard(), x, y, board[y][x]);
          }
       }
    }
