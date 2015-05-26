@@ -26,11 +26,29 @@ var pieces = [];
 var attackPoints = [0, 0, 0, 0, 0, 0, 0];
 var accumulatorPoints = [0, 0, 0, 0, 0, 0, 0];
 
+var socket = io.connect('http://localhost:8080');
+socket.on('connect', function (data) {
+   var name = prompt("What is your name?");
+   $("#name").text(name);
+   socket.emit('join', name);
+})
+
+socket.on('messages', function (data) {
+   $("#message").text(data.message);
+   
+});
+
+
+
 function startGame() {
+   
+
    document.addEventListener('keydown', keydown, false);
    console.log("Starting board setup.")
    playing = true;
    totalLinesCleared = 0;
+   attackPoints = [0, 0, 0, 0, 0, 0, 0];
+   accumulatorPoints = [0, 0, 0, 0, 0, 0, 0];
    clearCanvas();
    boardSetup();
    populatePieces(3);
@@ -39,6 +57,7 @@ function startGame() {
    startFallingPiece();
    console.log(attackPoints);
    console.log(accumulatorPoints);
+   socket.emit('messages', "Game is starting");
 }
 
 function keydown(ev) {
@@ -225,11 +244,24 @@ function clearLines()
          clearLine(y);
       }
    }
-   console.log("Lines cleared by piece: " + linesCleared);
-   console.log("Total lines cleared: " + totalLinesCleared);
-   attack();
-   console.log("Accumulator Totals:");
-   console.log(accumulatorPoints);
+   if (linesCleared > 0)
+   {
+      console.log("Lines cleared by piece: " + linesCleared);
+      console.log("Total lines cleared: " + totalLinesCleared);
+      attack();
+      console.log("Accumulator Totals:");
+      console.log(accumulatorPoints);
+      updatePointTotals();
+      socket.emit('messages', "Total lines cleared: " + totalLinesCleared);
+   }
+}
+
+function updatePointTotals()
+{
+   for(var i = 0; i < accumulatorPoints.length; i++)
+   {
+      $("#" + i + "Accum").text(accumulatorPoints[i]);
+   }   
 }
 
 function clearLine(rowIndex)
@@ -289,6 +321,13 @@ function attack()
    //dispense damage
    console.log("Attack");
    console.log(attackPoints);
+   $("#attackPoints").text(attackPoints[0] + " " + 
+      attackPoints[1] + " " + 
+      attackPoints[2] + " " +
+      attackPoints[3] + " " +
+      attackPoints[4] + " " +
+      attackPoints[5] + " " +
+      attackPoints[6]);
 
    attackPoints = [0, 0, 0, 0, 0, 0, 0];
 }

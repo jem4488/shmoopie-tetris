@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Battle Tetris</title>
+   <link rel="stylesheet" type="text/css" href="app.css">
+</head>
+
+<body>
+   <div id="tetris">
+      <h1>Let's play some Tetris <em id="name"></em>!</h1>
+      <h2 id="message"></h2>
+      <canvas id="gameBoard" width="400" height="640" style="border:1px solid #000000;">
+         Sorry, your browser does not support this application.
+      </canvas>
+      <canvas id="piecePreview" width="100" height="320" style="border:1px solid #000000;">
+      </canvas>
+      <button id ="play" onclick="startGame()">Play</button>      
+   </div>
+   <div id="scores">
+      <h2>Accumulator points:</h2>
+      <ul>
+         <li>Red: <strong id="0Accum">0</strong></li>
+         <li>Green: <strong id="1Accum">0</strong></li>
+         <li>Yellow: <strong id="2Accum">0</strong></li>
+         <li>Teal: <strong id="3Accum">0</strong></li>
+         <li>Blue: <strong id="4Accum">0</strong></li>
+         <li>Orange: <strong id="5Accum">0</strong></li>
+         <li>Purple: <strong id="6Accum">0</strong></li>
+      </ul>
+      <h2>Attacking: <strong id="attackPoints"></strong></h2>
+   </div>
+
+<script src="/jquery-2.1.4.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app.js"></script>
+
+</body>
+</html>
