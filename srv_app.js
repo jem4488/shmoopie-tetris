@@ -23,7 +23,11 @@ io.on('connection', function(client) {
 
    client.on('messages', function (data) {
       console.log(client.name + ": " + data);
-      client.broadcast.emit("messages", {message: client.name + ": " + data});
+      client.broadcast.emit("updateOpponentInfo", 
+         {
+            lineCount: client.name + " has cleared " + data.lineCount + " lines.",
+            attack: "You have been attacked " + data.attack
+         });
    });
 
    

@@ -33,9 +33,11 @@ socket.on('connect', function (data) {
    socket.emit('join', name);
 })
 
-socket.on('messages', function (data) {
-   $("#message").text(data.message);
-   
+socket.on('updateOpponentInfo', function (data) {
+   console.log("Received message from opponent");
+   console.log(data);
+   $("#opponentsLines").text(data.lineCount);
+   $("#message").text(data.attack);
 });
 
 
@@ -247,12 +249,25 @@ function clearLines()
    if (linesCleared > 0)
    {
       console.log("Lines cleared by piece: " + linesCleared);
-      console.log("Total lines cleared: " + totalLinesCleared);
-      attack();
+      console.log("Total lines cleared: " + totalLinesCleared);            
       console.log("Accumulator Totals:");
       console.log(accumulatorPoints);
+
+      socket.emit("messages", {
+         lineCount: totalLinesCleared, 
+         attack: attackPoints[0] + " " + 
+            attackPoints[1] + " " + 
+            attackPoints[2] + " " +
+            attackPoints[3] + " " +
+            attackPoints[4] + " " +
+            attackPoints[5] + " " +
+            attackPoints[6]
+         });
+
+      attack();
       updatePointTotals();
-      socket.emit('messages', "Total lines cleared: " + totalLinesCleared);
+      $("#linesCleared").text("Total lines cleared: " + totalLinesCleared);
+      //socket.emit('messages', "Total lines cleared: " + totalLinesCleared);
    }
 }
 
@@ -321,6 +336,8 @@ function attack()
    //dispense damage
    console.log("Attack");
    console.log(attackPoints);
+   
+
    $("#attackPoints").text(attackPoints[0] + " " + 
       attackPoints[1] + " " + 
       attackPoints[2] + " " +
