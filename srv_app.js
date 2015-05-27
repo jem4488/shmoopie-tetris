@@ -26,7 +26,8 @@ io.on('connection', function(client) {
       client.broadcast.emit("updateOpponentInfo", 
          {
             lineCount: client.name + " has cleared " + data.lineCount + " lines.",
-            attack: "You have been attacked " + data.attack
+            attackMessage: "You have been attacked!",
+            attack: data.attack
          });
    });
 

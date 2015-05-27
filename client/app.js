@@ -42,7 +42,8 @@ socket.on('updateOpponentInfo', function (data) {
    console.log("Received message from opponent");
    console.log(data);
    $("#opponentsLines").text(data.lineCount);
-   $("#message").text(data.attack);
+   $("#message").text(data.attackMessage);
+   processAttack(data.attack);
 });
 
 socket.on('battlePositions', function (data) {
@@ -60,6 +61,26 @@ $(document).ready(function() {
    battleGridY = position.top;
    initializeBattleGrid();
 });
+
+function processAttack(attackData)
+{
+   console.log("Processing Attack");
+   for(var i = 0; i < myBattleGrid.length; i ++)
+   {
+      for(var j = 0; j < myBattleGrid[i].length; j++)
+      {
+         var robot = myBattleGrid[i][j];
+         if(robot)
+         {
+            var attack = attackData[robot.color];
+            robot.life = robot.life - attack;
+            myBattleGrid[i][j] = robot;
+         }
+      }
+   }
+   drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
+   socket.emit('positions', myBattleGrid);
+}
 
 function initializeBattleGrid() {
    size = 3;
@@ -339,6 +360,11 @@ function clearLines()
 
       socket.emit("messages", {
          lineCount: totalLinesCleared, 
+         attack: attackPoints
+      });
+/*
+      socket.emit("messages", {
+         lineCount: totalLinesCleared, 
          attack: attackPoints[0] + " " + 
             attackPoints[1] + " " + 
             attackPoints[2] + " " +
@@ -347,7 +373,7 @@ function clearLines()
             attackPoints[5] + " " +
             attackPoints[6]
          });
-
+*/
       attack();
       updatePointTotals();
       $("#linesCleared").text("Total lines cleared: " + totalLinesCleared);
