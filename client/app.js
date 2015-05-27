@@ -15,6 +15,7 @@ var rotations = [
 var KEY = {LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ROTATERIGHT: 70, ROTATELEFT: 68}
 
 var board;
+var myBattleGrid = Array.apply(null, Array.apply(null, Array(3)));
 
 var piece;
 var xOffset = 4;
@@ -25,13 +26,17 @@ var totalLinesCleared = 0;
 var pieces = [];
 var attackPoints = [0, 0, 0, 0, 0, 0, 0];
 var accumulatorPoints = [0, 0, 0, 0, 0, 0, 0];
+var battleGridX = 0;
+var battleGridY = 0;
+var numRobots = 5;
+var placedRobots = 0;
 
 var socket = io.connect('http://localhost:8080');
 socket.on('connect', function (data) {
    var name = prompt("What is your name?");
    $("#name").text(name);
    socket.emit('join', name);
-})
+});
 
 socket.on('updateOpponentInfo', function (data) {
    console.log("Received message from opponent");
@@ -40,11 +45,88 @@ socket.on('updateOpponentInfo', function (data) {
    $("#message").text(data.attack);
 });
 
+socket.on('battlePositions', function (data) {
+   console.log("Received robot locations");
+   console.log(data);
+   placeOpponentsRobots(data);
+});
 
+$(document).ready(function() {
+   drawBattleGrids();
+   var myGrid = document.getElementById("myBattleGrid");
+   myGrid.addEventListener("click", gridClicked, false);
+   var position = myGrid.getBoundingClientRect();
+   battleGridX = position.left;
+   battleGridY = position.top;
+   initializeBattleGrid();
+});
 
-function startGame() {
+function initializeBattleGrid() {
+   size = 3;
+   myBattleGrid = [];
+   while(size--) {
+      myBattleGrid.push([]);
+   }
+
+}
+
+function drawRobotsOnGrid(grid, robots)
+{
+   for(var i = 0; i < robots.length; i++)
+   {
+      for(var j = 0; j < robots[i].length; j++)
+      {
+         if(robots[i][j])
+         {
+            grid.fillStyle = colors[robots[i][j].color];
+            grid.fillRect(j * 50 + 15, i * 50 + 15, 20, 20);
+            grid.font = "15px Arial";
+            grid.fillStyle = "#000000"
+            grid.fillText(robots[i][j].life, j * 50 + 15, i * 50 + 30);
+         }
+      }
+   }
+}
+
+function placeOpponentsRobots(data) {
+   drawRobotsOnGrid(getOpponentsBattleGrid(), data);
+/*
+   for(var i = 0; i < data.length; i++)
+   {
+      for(var j = 0; j < data[i].length; j++)
+      {
+         if(data[i][j])
+         {
+            battleGrid.fillStyle = colors[data[i][j].color];
+            battleGrid.fillRect(j * 50 + 15, i * 50 + 15, 20, 20);
+            battleGrid.font = "15px Arial";
+            battleGrid.fillStyle = "#000000"
+            battleGrid.fillText(data[i][j].life, j * 50 + 15, i * 50 + 30);
+         }
+      }
+   }
+   */
+}
+
+function gridClicked(event) {
+   if (placedRobots >= numRobots)
+      return;
    
+   var a = Math.floor((event.pageX - battleGridX)/50);
+   var b = Math.floor((event.pageY - battleGridY)/50);
+   /*
+   console.log(a + ", " + b);
+   var grid = getMyBattleGrid();
+   grid.fillStyle = colors[placedRobots];
+   grid.fillRect(a * 50 + 15, b * 50 + 15 , 20, 20);
+   */
+   myBattleGrid[b][a] = {color: placedRobots, life: 100};
+   drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
+   console.log(myBattleGrid);
+   placedRobots++;
+}
 
+function startGame() {   
    document.addEventListener('keydown', keydown, false);
    console.log("Starting board setup.")
    playing = true;
@@ -59,6 +141,8 @@ function startGame() {
    startFallingPiece();
    console.log(attackPoints);
    console.log(accumulatorPoints);
+   //remove click event so robots cannot be moved.
+   socket.emit('positions', myBattleGrid);
    socket.emit('messages', "Game is starting");
 }
 
@@ -358,6 +442,18 @@ function getGameBoard() {
    return ctx;
 }
 
+function getMyBattleGrid() {
+   var c = document.getElementById("myBattleGrid");
+   var ctx = c.getContext("2d");
+   return ctx;
+}
+
+function getOpponentsBattleGrid() {
+   var c = document.getElementById("oppBattleGrid");
+   var ctx = c.getContext("2d");
+   return ctx;
+}
+
 function clearCanvas() {
    getGameBoard().clearRect(0, 0, 10 * tetriminoSize, boardHeight * tetriminoSize);
 }
@@ -383,6 +479,34 @@ function redrawBoard() {
          }
       }
    }
+}
+
+function drawBattleGrids()
+{
+   drawBattleGrid(getMyBattleGrid());
+   drawBattleGrid(getOpponentsBattleGrid());
+}
+
+function drawBattleGrid(gridCanvas) {
+   gridCanvas.beginPath();
+   gridCanvas.moveTo(50,0);
+   gridCanvas.lineTo(50,150);
+   gridCanvas.stroke();
+
+   gridCanvas.beginPath();
+   gridCanvas.moveTo(100,0);
+   gridCanvas.lineTo(100,150);
+   gridCanvas.stroke();
+
+   gridCanvas.beginPath();
+   gridCanvas.moveTo(0,50);
+   gridCanvas.lineTo(150,50);
+   gridCanvas.stroke();
+
+   gridCanvas.beginPath();
+   gridCanvas.moveTo(0,100);
+   gridCanvas.lineTo(150,100);
+   gridCanvas.stroke();
 }
 
 function drawPiecePreview() {

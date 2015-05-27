@@ -30,7 +30,11 @@ io.on('connection', function(client) {
          });
    });
 
-   
+   client.on('positions', function (data) {
+      console.log("Received position data from " + client.name);
+      console.log(data);
+      client.broadcast.emit("battlePositions", data);
+   });
 
    //client.emit('messages', {message: 'Hello ' + client.name + '!'});
 });
