@@ -287,17 +287,9 @@ function clearLine(rowIndex)
 
 function scoreLine(rowIndex, linesCleared)
 {
-   console.log("Scoring line");
-   console.log(attackPoints);
-   console.log(accumulatorPoints);
-
    var counts = calculateTetriminoColors(rowIndex);
    calculateAttackPoints(counts);
    calculateAccumulatorPoints(counts, linesCleared);
-
-   console.log("Finished Scoring");
-   console.log(attackPoints);
-   console.log(accumulatorPoints);
 }
 
 function calculateTetriminoColors(rowIndex)
@@ -314,9 +306,7 @@ function calculateAttackPoints(counts)
 {
    for(var i = 0; i < counts.length; i++)
    {
-      console.log("Adding " + counts[i] + " points to index " + i);
       attackPoints[i] = attackPoints[i] + counts[i];
-      console.log(attackPoints);
    }
 }
 
