@@ -4,6 +4,7 @@ var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 app.use(express.static('client'));
 
+
 /*io.on('connection', function(client) {
    client.on('messages', function (data) {
       console.log(data);
@@ -36,6 +37,11 @@ io.on('connection', function(client) {
       console.log(data);
       client.broadcast.emit("battlePositions", data);
    });
+
+   client.on('attack', function (data) {
+      console.log("Received attack from " + client.name);
+      client.broadcast.emit("attack", data);
+   })
 
    //client.emit('messages', {message: 'Hello ' + client.name + '!'});
 });

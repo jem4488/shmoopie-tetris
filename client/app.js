@@ -16,6 +16,7 @@ var KEY = {LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ROTATERIGHT: 70, ROTATELEFT: 6
 
 var board;
 var myBattleGrid = Array.apply(null, Array.apply(null, Array(3)));
+var oppBattleGrid;
 
 var piece;
 var xOffset = 4;
@@ -43,14 +44,19 @@ socket.on('updateOpponentInfo', function (data) {
    console.log(data);
    $("#opponentsLines").text(data.lineCount);
    $("#message").text(data.attackMessage);
-   processAttack(data.attack);
 });
 
 socket.on('battlePositions', function (data) {
    console.log("Received robot locations");
    console.log(data);
-   placeOpponentsRobots(data);
+   oppBattleGrid = transposeOpponentsGrid(data);
+   placeOpponentsRobots(oppBattleGrid);
 });
+
+socket.on('attack', function (data) {
+   console.log("Received attack");
+   processAttack(data.attacks);
+})
 
 $(document).ready(function() {
    drawBattleGrids();
@@ -59,36 +65,51 @@ $(document).ready(function() {
    var position = myGrid.getBoundingClientRect();
    battleGridX = position.left;
    battleGridY = position.top;
-   initializeBattleGrid();
+   myBattleGrid = initializeBattleGrid();
 });
 
 function processAttack(attackData)
 {
    console.log("Processing Attack");
+   console.log(attackData);
+
+   for(var i = 0; i < attackData.length; i ++)
+   {
+      var attack = attackData[i];
+      var position = findPositionById(attack.id);
+      var robot = myBattleGrid[position.row][position.column];
+      robot.life = robot.life - attack.damage;
+      myBattleGrid[position.row][position.column] = robot;
+      console.log("Removed " + attack.damage + " life from robot at position " +
+         position.row + ", " + position.column + ". Current life is now " + robot.life);
+   }
+
+   drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
+   socket.emit('positions', myBattleGrid);
+}
+
+function findPositionById(id) {
    for(var i = 0; i < myBattleGrid.length; i ++)
    {
       for(var j = 0; j < myBattleGrid[i].length; j++)
       {
          var robot = myBattleGrid[i][j];
-         if(robot)
-         {
-            var attack = attackData[robot.color];
-            robot.life = robot.life - attack;
-            myBattleGrid[i][j] = robot;
-         }
+         if (robot && robot.id == id)
+            return {
+               row: i,
+               column: j
+            };
       }
    }
-   drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
-   socket.emit('positions', myBattleGrid);
 }
 
 function initializeBattleGrid() {
    size = 3;
-   myBattleGrid = [];
+   var grid = [];
    while(size--) {
-      myBattleGrid.push([]);
+      grid.push([]);
    }
-
+   return grid;
 }
 
 function drawRobotsOnGrid(grid, robots)
@@ -111,22 +132,27 @@ function drawRobotsOnGrid(grid, robots)
 
 function placeOpponentsRobots(data) {
    drawRobotsOnGrid(getOpponentsBattleGrid(), data);
-/*
-   for(var i = 0; i < data.length; i++)
+}
+
+function transposeOpponentsGrid(data) {
+   console.log("Received grid");
+   console.log(data);
+   var newGrid = initializeBattleGrid();
+   
+   for (var row = 0; row < data.length; row++)
    {
-      for(var j = 0; j < data[i].length; j++)
+      var newColumn = 0;
+      for(var column = 2; column >= 0; column--)
       {
-         if(data[i][j])
-         {
-            battleGrid.fillStyle = colors[data[i][j].color];
-            battleGrid.fillRect(j * 50 + 15, i * 50 + 15, 20, 20);
-            battleGrid.font = "15px Arial";
-            battleGrid.fillStyle = "#000000"
-            battleGrid.fillText(data[i][j].life, j * 50 + 15, i * 50 + 30);
-         }
+         console.log("Setting " + row + ", " + newColumn + " equal to " + row + ", " + column);
+         newGrid[row][newColumn] = data[row][column];
+         newColumn++;
       }
    }
-   */
+
+   console.log("Transposed grid");
+   console.log(newGrid);
+   return newGrid;
 }
 
 function gridClicked(event) {
@@ -135,13 +161,8 @@ function gridClicked(event) {
    
    var a = Math.floor((event.pageX - battleGridX)/50);
    var b = Math.floor((event.pageY - battleGridY)/50);
-   /*
-   console.log(a + ", " + b);
-   var grid = getMyBattleGrid();
-   grid.fillStyle = colors[placedRobots];
-   grid.fillRect(a * 50 + 15, b * 50 + 15 , 20, 20);
-   */
-   myBattleGrid[b][a] = {color: placedRobots, life: 100};
+
+   myBattleGrid[b][a] = {id: placedRobots, color: placedRobots, life: 100};
    drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
    console.log(myBattleGrid);
    placedRobots++;
@@ -358,22 +379,11 @@ function clearLines()
       console.log("Accumulator Totals:");
       console.log(accumulatorPoints);
 
+
       socket.emit("messages", {
          lineCount: totalLinesCleared, 
-         attack: attackPoints
       });
-/*
-      socket.emit("messages", {
-         lineCount: totalLinesCleared, 
-         attack: attackPoints[0] + " " + 
-            attackPoints[1] + " " + 
-            attackPoints[2] + " " +
-            attackPoints[3] + " " +
-            attackPoints[4] + " " +
-            attackPoints[5] + " " +
-            attackPoints[6]
-         });
-*/
+
       attack();
       updatePointTotals();
       $("#linesCleared").text("Total lines cleared: " + totalLinesCleared);
@@ -446,7 +456,77 @@ function attack()
       attackPoints[5] + " " +
       attackPoints[6]);
 
+   var attacks = [];
+   for(var i = 0; i < myBattleGrid.length; i++)
+   {
+      for(var j = 0; j < myBattleGrid[i].length; j++)
+      {
+         if(myBattleGrid[i][j])
+         {
+            var id = findOpponent(i);
+            if (!id)
+            {
+               console.log("No robots to attack");
+               return;
+            }
+
+            attacks.push({
+               id: id,
+               damage: attackPoints[myBattleGrid[i][j].color]
+            })
+         }
+      }
+   }
+
+   socket.emit("attack", {
+      attacks: attacks
+   });
+
    attackPoints = [0, 0, 0, 0, 0, 0, 0];
+}
+
+function findOpponent(row)
+{   
+   searchOrder = getSearchOrder(row);
+   for(var i = 0; i < searchOrder.length; i ++)
+   {
+      var opp = findOpponentInRow(searchOrder[i]);
+      if (opp)
+         return opp;
+   }
+   return false;
+}
+
+function getSearchOrder(startingRow)
+{
+   var order = [];
+   if (startingRow == 0)
+   {
+      order.push(0, 1, 2);
+   }
+   else if (startingRow == 1)
+   {
+      order.push(1, 2, 0);
+   }
+   else if (startingRow == 2)
+   {
+      order.push(2, 1, 0);
+   }
+
+   console.log("Search Order:");
+   console.log(order);
+   return order;
+}
+
+function findOpponentInRow(row) {
+   for(var i = 0; i < oppBattleGrid[row].length; i++)
+   {
+      if (oppBattleGrid[row][i])
+      {
+         return oppBattleGrid[row][i].id;
+      }
+   }
+   return undefined;
 }
 
 function getNextPiece()
