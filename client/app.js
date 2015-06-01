@@ -32,7 +32,7 @@ var battleGridY = 0;
 var numRobots = 5;
 var placedRobots = 0;
 
-var socket = io.connect('http://localhost:8080');
+var socket = io.connect('http://192.168.0.10:8080');
 socket.on('connect', function (data) {
    var name = prompt("What is your name?");
    $("#name").text(name);
@@ -43,7 +43,6 @@ socket.on('updateOpponentInfo', function (data) {
    console.log("Received message from opponent");
    console.log(data);
    $("#opponentsLines").text(data.lineCount);
-   $("#message").text(data.attackMessage);
 });
 
 socket.on('battlePositions', function (data) {
@@ -56,6 +55,13 @@ socket.on('battlePositions', function (data) {
 socket.on('attack', function (data) {
    console.log("Received attack");
    processAttack(data.attacks);
+})
+
+socket.on('winner', function () {
+   window.clearInterval(timer);
+   console.log("Removing event listeners");
+   document.removeEventListener("keydown", keydown);
+   $("#message").text("You are the winner!!");
 })
 
 $(document).ready(function() {
@@ -79,13 +85,31 @@ function processAttack(attackData)
       var position = findPositionById(attack.id);
       var robot = myBattleGrid[position.row][position.column];
       robot.life = robot.life - attack.damage;
+      if (robot.life <= 0)
+      {   
+         robot = undefined;
+         placedRobots--;
+      }
       myBattleGrid[position.row][position.column] = robot;
+      var currentLife = robot ? robot.life : "dead";
       console.log("Removed " + attack.damage + " life from robot at position " +
-         position.row + ", " + position.column + ". Current life is now " + robot.life);
+         position.row + ", " + position.column + ". Current life is now " +  currentLife);
    }
 
    drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
+   console.log("Sending updated robot information after processing attack");
+   console.log(myBattleGrid);
    socket.emit('positions', myBattleGrid);
+   if(placedRobots == 0)
+      endGame();
+}
+
+function endGame() {
+   window.clearInterval(timer);
+   console.log("Removing event listeners");
+   document.removeEventListener("keydown", keydown);
+   socket.emit('end');
+   $("#message").text("Sorry, you have lost!");
 }
 
 function findPositionById(id) {
@@ -114,6 +138,7 @@ function initializeBattleGrid() {
 
 function drawRobotsOnGrid(grid, robots)
 {
+   drawBattleGrid(grid);
    for(var i = 0; i < robots.length; i++)
    {
       for(var j = 0; j < robots[i].length; j++)
@@ -131,6 +156,8 @@ function drawRobotsOnGrid(grid, robots)
 }
 
 function placeOpponentsRobots(data) {
+   console.log("Placing robots on grid");
+   console.log(data);
    drawRobotsOnGrid(getOpponentsBattleGrid(), data);
 }
 
@@ -144,6 +171,10 @@ function transposeOpponentsGrid(data) {
       var newColumn = 0;
       for(var column = 2; column >= 0; column--)
       {
+         if(data[row][column])
+         {
+            console.log("Robot detected at " + row + ", " + column + ". Will be moved to " + row + ", " + newColumn);
+         }
          console.log("Setting " + row + ", " + newColumn + " equal to " + row + ", " + column);
          newGrid[row][newColumn] = data[row][column];
          newColumn++;
@@ -185,7 +216,6 @@ function startGame() {
    console.log(accumulatorPoints);
    //remove click event so robots cannot be moved.
    socket.emit('positions', myBattleGrid);
-   socket.emit('messages', "Game is starting");
 }
 
 function keydown(ev) {
@@ -224,6 +254,7 @@ function movePieceDown() {
       if (yOffset == 0)
       {
          //End the Game.
+         endGame();
          return false;;
       }
 
@@ -380,7 +411,7 @@ function clearLines()
       console.log(accumulatorPoints);
 
 
-      socket.emit("messages", {
+      socket.emit("linesCleared", {
          lineCount: totalLinesCleared, 
       });
 
@@ -456,6 +487,8 @@ function attack()
       attackPoints[5] + " " +
       attackPoints[6]);
 
+   var tempGrid = oppBattleGrid;
+
    var attacks = [];
    for(var i = 0; i < myBattleGrid.length; i++)
    {
@@ -463,21 +496,39 @@ function attack()
       {
          if(myBattleGrid[i][j])
          {
-            var id = findOpponent(i);
-            if (!id)
-            {
-               console.log("No robots to attack");
-               return;
-            }
+            var attack = attackPoints[myBattleGrid[i][j].color];
 
-            attacks.push({
-               id: id,
-               damage: attackPoints[myBattleGrid[i][j].color]
-            })
+            while (attack > 0)
+            {
+               var position = findOpponent(i, tempGrid);
+               if (!position)
+               {
+                  console.log("No robots to attack");
+                  break;
+               }
+               var robot = tempGrid[position.row][position.column];           
+               var damage = robot.life >= attack ? attack : robot.life;            
+
+               attacks.push({
+                  id: robot.id,
+                  damage: damage
+               });
+
+               if (robot.life === damage)
+                  tempGrid[position.row][position.column] = undefined;
+               else
+               {
+                  robot.life = robot.life - damage;
+                  tempGrid[position.row][position.column] = robot;
+               }   
+
+               attack = attack - damage;
+            }
          }
       }
    }
-
+   console.log("Sending attack info:");
+   console.log(attacks);
    socket.emit("attack", {
       attacks: attacks
    });
@@ -485,12 +536,12 @@ function attack()
    attackPoints = [0, 0, 0, 0, 0, 0, 0];
 }
 
-function findOpponent(row)
+function findOpponent(row, oppGrid)
 {   
    searchOrder = getSearchOrder(row);
    for(var i = 0; i < searchOrder.length; i ++)
    {
-      var opp = findOpponentInRow(searchOrder[i]);
+      var opp = findOpponentInRow(searchOrder[i], oppGrid);
       if (opp)
          return opp;
    }
@@ -513,17 +564,19 @@ function getSearchOrder(startingRow)
       order.push(2, 1, 0);
    }
 
-   console.log("Search Order:");
-   console.log(order);
    return order;
 }
 
-function findOpponentInRow(row) {
-   for(var i = 0; i < oppBattleGrid[row].length; i++)
+function findOpponentInRow(row, oppGrid) {
+   for(var i = 0; i < oppGrid[row].length; i++)
    {
-      if (oppBattleGrid[row][i])
+      if (oppGrid[row][i])
       {
-         return oppBattleGrid[row][i].id;
+         //return oppGrid[row][i].id;
+         return {
+            row: row,
+            column: i
+         };
       }
    }
    return undefined;
@@ -594,6 +647,7 @@ function drawBattleGrids()
 }
 
 function drawBattleGrid(gridCanvas) {
+   gridCanvas.clearRect(0, 0, 150, 150);
    gridCanvas.beginPath();
    gridCanvas.moveTo(50,0);
    gridCanvas.lineTo(50,150);

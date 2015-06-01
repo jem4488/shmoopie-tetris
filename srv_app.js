@@ -22,13 +22,11 @@ io.on('connection', function(client) {
       console.log('Client ' + client.name + ' connected...');
    });
 
-   client.on('messages', function (data) {
+   client.on('linesCleared', function (data) {
       console.log(client.name + ": " + data);
       client.broadcast.emit("updateOpponentInfo", 
          {
             lineCount: client.name + " has cleared " + data.lineCount + " lines.",
-            attackMessage: "You have been attacked!",
-            attack: data.attack
          });
    });
 
@@ -41,11 +39,17 @@ io.on('connection', function(client) {
    client.on('attack', function (data) {
       console.log("Received attack from " + client.name);
       client.broadcast.emit("attack", data);
+   });
+
+   client.on('end', function () {
+      console.log("Game ended.  " + client.name + " lost.");
+      client.broadcast.emit("winner");
    })
 
    //client.emit('messages', {message: 'Hello ' + client.name + '!'});
 });
 app.get('/', function (req, res) {
+   console.log("Page requested");
    res.sendFile(__dirname + '/index.html');
 });
 
