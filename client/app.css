@@ -51,11 +51,14 @@ canvas {
 
 #play {
    display: block;
-   margin-left: 179px;
+   /*margin-left: 179px;*/
+   margin: 0 auto;
+   margin-top: 10px;
 }
 
 #battle {
-   margin-left: 43px;
+   /*margin-left: 43px;*/
+   text-align: center;
 }
 
 #holdPiece {
@@ -81,4 +84,9 @@ canvas {
 .selected {
    background-color: #888888;
    border: 2px solid #444444;
+}
+
+.robot-setup {
+   /*margin-left: 43px;*/
+   text-align: center;
 }

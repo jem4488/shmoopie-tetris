@@ -51,7 +51,7 @@ socket.on('connect', function (data) {
 
 socket.on('opponentReady', function (data) {
    console.log("Oppoent is ready, waiting for you to place robots");
-   $('#message').text(data + "is ready to begin. Please finish placing your robots.");
+   $('#message').text(data + " is ready to begin. Please finish placing your robots.");
 });
 
 socket.on('waitingForPlacement', function (data) {

@@ -19,13 +19,13 @@
             <canvas id="piecePreview" width="100" height="320" style="border:1px solid #000000;">
             </canvas>
          </div>
-         <button id ="play" onclick="readyToStartGame()" disabled='true'>Ready</button>      
+               
       </div>
       <div id="battleSetup">
          <h3 id="robotMessage"></h3>
-         <ul id="robotTypes">
+         <ul id="robotTypes" class="robot-setup">
          </ul>
-         <ul id="robotColors">
+         <ul id="robotColors" class="robot-setup">
          </ul>
       </div>
       <div id="battle">
@@ -33,6 +33,7 @@
          </canvas>
          <canvas id="oppBattleGrid" width="150" height="150" style="border:1px solid #000000;">
          </canvas>
+         <button id ="play" onclick="readyToStartGame()" disabled='true'>Ready</button>
       </div>
       <div id="scores">
          <h2 id="opponentsLines"></h2>
