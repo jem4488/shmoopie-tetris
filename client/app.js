@@ -3,6 +3,11 @@ var tetriminoSize = 40;
 var boardHeight = 16;
 var colors = ["#E60000", "#00E600", "#FFFF47", "#75FFFF", "#0033CC", "#FF9933", "#CC33FF"];
 var images = ["redTetrimino.jpg", "greenTetrimino.jpg", "yellowTetrimino.jpg", "tealTetrimino.jpg", "blueTetrimino.jpg", "orangeTetrimino.jpg", "purpleTetrimino.jpg", "grayTetrimino.jpg"];
+var robotTypes = [
+   {id: 0, name: "Gladiator"},
+   {id: 1, name: "Samuri"},
+   {id: 2, name: "Sentinel"}
+];
 var rotations = [
    [[[1,1,0], [0,1,1]], [[0,1],[1,1],[1,0]]], // red z
    [[[0,1,1], [1,1,0]], [[1,0],[1,1],[0,1]]], // green s
@@ -31,10 +36,10 @@ var totalLinesCleared = 0;
 var pieces = [];
 var attackPoints = [0, 0, 0, 0, 0, 0, 0];
 var accumulatorPoints = [0, 0, 0, 0, 0, 0, 0];
-var battleGridX = 0;
-var battleGridY = 0;
 var numRobots = 5;
 var placedRobots = 0;
+var selectedRobotType;
+var selectedRobotColor;
 
 
 var socket = io.connect('http://192.168.0.10:8080');
@@ -95,12 +100,20 @@ socket.on('winner', function () {
 });
 
 $(document).ready(function() {
+   //populate robot selections:
+   var list = $('#robotTypes');
+   $.each(robotTypes, function(index, value) {
+      list.append('<li><button data-index=\'' + value.id + '\' onclick=\'robotTypeSelected(this)\'>' + value.name + '</button></li>');
+   });
+
+   list = $('#robotColors');
+   $.each(colors, function(index, value) {
+      list.append('<li><button data-index=\'' + index + '\' onclick=\'robotColorSelected(this)\' style=\'background-color:' + value + ';\'>&nbsp;</button></li>')
+   });
+
    drawBattleGrids();
    var myGrid = document.getElementById("myBattleGrid");
    myGrid.addEventListener("click", gridClicked, false);
-   var position = myGrid.getBoundingClientRect();
-   battleGridX = position.left;
-   battleGridY = position.top;
    myBattleGrid = initializeBattleGrid();
 });
 
@@ -230,25 +243,81 @@ function transposeOpponentsGrid(data) {
    return newGrid;
 }
 
-function gridClicked(event) {
-   if (placedRobots >= numRobots)
-      return;
+function robotTypeSelected(element)
+{
+   if(selectedRobotType >= 0)
+   {
+      var oldElement = $('#robotTypes button[data-index=' + selectedRobotType + ']');
+      console.log(oldElement);
+      oldElement.removeAttr('class', 'selected');
+   }   
 
+   console.log(element);
+   $(element).attr('class', 'selected');
+   //selectedRobotType = element.id;
+   selectedRobotType = $(element).data("index");
+   console.log("Selected type: " + selectedRobotType);
+}
+
+function robotColorSelected(element)
+{
+   if(selectedRobotColor >= 0)
+   {
+      var oldElement = $('#robotColors button[data-index=' + selectedRobotColor + ']');
+      console.log(oldElement);
+      oldElement.removeAttr('class', 'selected');
+   }  
+
+   console.log(element);
+   $(element).attr('class', 'selected');
+   selectedRobotColor = $(element).data("index");
+   console.log("Selected color: " + selectedRobotColor);
+}
+
+function gridClicked(event) {
+   var message;
+
+   if (placedRobots >= numRobots)
+   {   
+      message = "You have already placed all your robots.";      
+   }
+   else if(!(selectedRobotType >= 0))
+   {
+      message = "Please select a type of robot.";
+   }
+   else if(!(selectedRobotColor >= 0))
+   {
+      message = "Please select a color for your robot.";
+   }
+
+   console.log("Message: " + message);
+   
+   if (message)
+   {
+      $('#robotMessage').text(message);
+      return;
+   }   
+
+   
    var myGrid = document.getElementById("myBattleGrid");
 
    var position = this.getBoundingClientRect();
    var a = Math.floor((event.clientX - position.left)/50);
    var b = Math.floor((event.clientY - position.top)/50);
 
-   myBattleGrid[b][a] = {id: placedRobots, color: placedRobots, life: 100};
-   drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
+   myBattleGrid[b][a] = {id: placedRobots, color: selectedRobotColor, life: 100};
+   drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);   
    console.log(myBattleGrid);
+
+   $('#robotMessage').text("");
    placedRobots++;
 }
 
 function readyToStartGame() {
    socket.emit('ready');
    $("#play").prop('disabled', true);
+   $("#battleSetup").fadeOut();
+   $("#gameArea").fadeIn();
 }
 
 function startGame() {  
