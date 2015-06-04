@@ -4,9 +4,10 @@ var boardHeight = 16;
 var colors = ["#E60000", "#00E600", "#FFFF47", "#75FFFF", "#0033CC", "#FF9933", "#CC33FF"];
 var images = ["redTetrimino.jpg", "greenTetrimino.jpg", "yellowTetrimino.jpg", "tealTetrimino.jpg", "blueTetrimino.jpg", "orangeTetrimino.jpg", "purpleTetrimino.jpg", "grayTetrimino.jpg"];
 var robotTypes = [
-   {id: 0, name: "Gladiator"},
-   {id: 1, name: "Samuri"},
-   {id: 2, name: "Sentinel"}
+   {name: "Gladiator", attackMultiplier: 1, life: 100, healMultiplier: 0, accumMultiplier: 1},
+   {name: "Samuri", attackMultiplier: 2, life: 50, healMultiplier: 0, accumMultiplier: 1},
+   {name: "Sentinel", attackMultiplier: 0, life: 100, healMultiplier: 1, accumMultiplier: 1},
+   {name: "Valkerie", attackMultiplier: .5, life: 100, healMultiplier: 0, accumMultiplier: 1.5},
 ];
 var rotations = [
    [[[1,1,0], [0,1,1]], [[0,1],[1,1],[1,0]]], // red z
@@ -36,6 +37,7 @@ var totalLinesCleared = 0;
 var pieces = [];
 var attackPoints = [0, 0, 0, 0, 0, 0, 0];
 var accumulatorPoints = [0, 0, 0, 0, 0, 0, 0];
+//var accumulatorTotals = [0, 0, 0, 0, 0, 0, 0];
 var numRobots = 5;
 var placedRobots = 0;
 var selectedRobotType;
@@ -103,7 +105,7 @@ $(document).ready(function() {
    //populate robot selections:
    var list = $('#robotTypes');
    $.each(robotTypes, function(index, value) {
-      list.append('<li><button data-index=\'' + value.id + '\' onclick=\'robotTypeSelected(this)\'>' + value.name + '</button></li>');
+      list.append('<li><button data-index=\'' + index + '\' onclick=\'robotTypeSelected(this)\'>' + value.name + '</button></li>');
    });
 
    list = $('#robotColors');
@@ -305,7 +307,7 @@ function gridClicked(event) {
    var a = Math.floor((event.clientX - position.left)/50);
    var b = Math.floor((event.clientY - position.top)/50);
 
-   myBattleGrid[b][a] = {id: placedRobots, color: selectedRobotColor, life: 100};
+   myBattleGrid[b][a] = {id: placedRobots, color: selectedRobotColor, life: robotTypes[selectedRobotType].life, type: selectedRobotType, accum:0};
    drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);   
    console.log(myBattleGrid);
 
@@ -578,7 +580,7 @@ function clearLines()
    {
       console.log("Lines cleared by piece: " + linesCleared);
       console.log("Total lines cleared: " + totalLinesCleared);            
-      console.log("Accumulator Totals:");
+      console.log("Accumulator Points:");
       console.log(accumulatorPoints);
 
 
@@ -587,18 +589,29 @@ function clearLines()
       });
 
       attack();
-      updatePointTotals();
+      updateAccumulatorTotals();
       $("#linesCleared").text("Total lines cleared: " + totalLinesCleared);
       //socket.emit('messages', "Total lines cleared: " + totalLinesCleared);
    }
 }
 
-function updatePointTotals()
+function updateAccumulatorTotals()
 {
-   for(var i = 0; i < accumulatorPoints.length; i++)
+   for(var i = 0; i < myBattleGrid.length; i ++)
    {
-      $("#" + i + "Accum").text(accumulatorPoints[i]);
-   }   
+      for(var j = 0; j < myBattleGrid[i].length; j++)
+      {
+         var robot = myBattleGrid[i][j];
+         if (robot)
+         {
+            //console.log("Color: " + robot.color + " Prev Total: " + accumulatorTotals[robot.color] + " Points: " + accumulatorPoints[robot.color] + " Multiplier: " + robotTypes[robot.type].accumMultiplier);
+            //accumulatorTotals[robot.color] = accumulatorTotals[robot.color] + accumulatorPoints[robot.color] * robotTypes[robot.type].accumMultiplier;
+            robot.accum = robot.accum + accumulatorPoints[robot.color] * robotTypes[robot.type].accumMultiplier;
+            $("#" + robot.id + "Accum").text(robot.accum).css("color", colors[robot.color]);
+         }
+      }
+   }
+   accumulatorPoints = [0,0,0,0,0,0,0]; 
 }
 
 function clearLine(rowIndex)
@@ -634,11 +647,15 @@ function calculateAttackPoints(counts)
 
 function calculateAccumulatorPoints(counts, linesCleared)
 {
+   console.log("Caclulation accumulator points.");
+   console.log(counts);
+   console.log("Lines cleared: " + linesCleared);
    if (linesCleared >= 2)
    {
       for(var i = 0; i < counts.length; i++)
       {
          accumulatorPoints[i] = accumulatorPoints[i] + counts[i] * linesCleared;
+         console.log("Color: " + i + "Prev accum: " + accumulatorPoints[i]);
       }
    }
 }
@@ -646,7 +663,7 @@ function calculateAccumulatorPoints(counts, linesCleared)
 function attack()
 {
    //dispense damage
-   console.log("Attack");
+   console.log("Attack Points");
    console.log(attackPoints);
    
 
@@ -665,9 +682,10 @@ function attack()
    {
       for(var j = 0; j < myBattleGrid[i].length; j++)
       {
-         if(myBattleGrid[i][j])
+         var attackingRobot = myBattleGrid[i][j];         
+         if(attackingRobot)
          {
-            var attack = attackPoints[myBattleGrid[i][j].color];
+            var attack = attackPoints[attackingRobot.color] * robotTypes[attackingRobot.type].attackMultiplier;
 
             while (attack > 0)
             {
@@ -695,11 +713,17 @@ function attack()
 
                attack = attack - damage;
             }
+            if (robotTypes[attackingRobot.type].healMultiplier > 0)
+            {
+               attackingRobot.life += attackPoints[attackingRobot.color];
+            }
          }
       }
    }
    console.log("Sending attack info:");
    console.log(attacks);
+   drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
+   socket.emit('positions', myBattleGrid);
    socket.emit("attack", {
       attacks: attacks
    });
