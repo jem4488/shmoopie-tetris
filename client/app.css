@@ -7,13 +7,17 @@ html, body, h1, h2, h3, h4, p, div, ul, ol, li, canvas {
    font-family: "Helvetica Neue", Helvetica, sans-serif;
 }
 
+body {
+   background-color: #999999;
+}
+
 h1 {
    font-size: 36px;
    font-weight: bold;
-   text-align: left;
+   text-align: center;
 }
 h2 {
-   font-size: 30px;
+   font-size: 26px;
    font-weight: 100;
    text-align: center;
 }
@@ -25,6 +29,19 @@ div{
 button {
    display: block;
    margin-left: 179px;
+}
+
+canvas {
+   background-color: #ffffff;
+}
+
+#main {
+   width: 550px;
+   margin: 0 auto;
+}
+
+#battle {
+   margin-left: 43px;
 }
 
 #holdPiece {
@@ -40,7 +57,7 @@ button {
 }
 
 .won {
-   color: green;
+   color: #00E600;
 }
 
 .lost {
