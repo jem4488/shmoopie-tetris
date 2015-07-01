@@ -4,9 +4,6 @@ var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 app.use(express.static('client'));
 
-var clientCount = 0;
-var readyCount = 0;
-
 var allClients = [];
 
 
@@ -28,7 +25,6 @@ io.on('connection', function(client) {
 
    client.on('join', function (name) {
       client.name = name;
-      clientCount++;
       console.log('Client ' + client.name + ' connected...');
       var opp = findOpponent(client);
       if (opp)
@@ -83,18 +79,15 @@ io.on('connection', function(client) {
    client.on('end', function () {
       console.log("Game ended.  " + client.name + " lost.");
       client.opponent.emit("winner");
-      readyCount = 0;
    });
 
    client.on('disconnect', function() { 
+      client.opponent.emit("winner");
       var i = allClients.indexOf(client);     
-      clientCount--;      
-      console.log("Client " + client.name + "disconnected. " + clientCount + " clients connected.");
-      allClients.splice(0, 1);
-      console.log("AllClients: " + allClients.length);
-   })
 
-   //client.emit('messages', {message: 'Hello ' + client.name + '!'});
+      console.log("Client " + client.name + "disconnected. " + allClients.length + " clients connected.");
+      allClients.splice(0, 1);
+   })
 });
 app.get('/', function (req, res) {
    console.log("Page requested");
