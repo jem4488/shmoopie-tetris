@@ -49,10 +49,21 @@ socket.on('opponentReady', function (data) {
    $('#message').text(data + "is ready to begin. Please finish placing your robots.");
 });
 
-socket.on('waiting', function (data) {
-   console.log("Waiting for opponent");
+socket.on('waitingForPlacement', function (data) {
+   console.log("Waiting for opponent to place robots");
    $('#message').text("Waiting for opponent to place their robots.");
 });
+
+socket.on('waitingForOpponent', function (data) {
+   console.log("Waiting for opponent to join");
+   $('#message').text("Waiting for opponent to join.");   
+});
+
+socket.on('opponentFound', function (data) {
+   console.log("Opponents have been matched");
+   $('#message').text("Please place your robots, then click ready.");
+   $('#play').prop('disabled', false);
+})
 
 socket.on('startGame', function (data) {
    startTimer = window.setInterval(decreaseWait, 1000);

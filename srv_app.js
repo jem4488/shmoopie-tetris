@@ -7,6 +7,8 @@ app.use(express.static('client'));
 var clientCount = 0;
 var readyCount = 0;
 
+var allClients = [];
+
 
 /*io.on('connection', function(client) {
    client.on('messages', function (data) {
@@ -20,28 +22,48 @@ var readyCount = 0;
 */
 
 io.on('connection', function(client) {
+   allClients.push(client);
+
+   console.log("AllClients: " + allClients.length);
+
    client.on('join', function (name) {
       client.name = name;
       clientCount++;
       console.log('Client ' + client.name + ' connected...');
+      var opp = findOpponent(client);
+      if (opp)
+      {
+         console.log("setting opponents.  Client id: " + client.id + " Opponent id: " + opp.id);
+         client.opponent = opp;
+         opp.opponent = client;
+
+         console.log("emitting opponent found events");
+         client.emit("opponentFound");
+         opp.emit("opponentFound");
+      }
+      else
+      {
+         console.log("No Opponent Found");
+         client.emit("waitingForOpponent");
+      }
    });
 
    client.on('ready', function() {
-      readyCount++;
-      if (readyCount < clientCount)
+      client.ready = true;
+      if (!client.opponent.ready)
       {
-         client.broadcast.emit("opponentReady", client.name);
-         client.emit("waiting");
+         client.opponent.emit("opponentReady", client.name);
+         client.emit("waitingForPlacement");
       }
       else {
-         client.broadcast.emit("startGame");
+         client.opponent.emit("startGame");
          client.emit("startGame");
       }
    });
 
    client.on('linesCleared', function (data) {
       console.log(client.name + ": " + data);
-      client.broadcast.emit("updateOpponentInfo", 
+      client.opponent.emit("updateOpponentInfo", 
          {
             lineCount: client.name + " has cleared " + data.lineCount + " lines.",
          });
@@ -50,23 +72,26 @@ io.on('connection', function(client) {
    client.on('positions', function (data) {
       console.log("Received position data from " + client.name);
       console.log(data);
-      client.broadcast.emit("battlePositions", data);
+      client.opponent.emit("battlePositions", data);
    });
 
    client.on('attack', function (data) {
       console.log("Received attack from " + client.name);
-      client.broadcast.emit("attack", data);
+      client.opponent.emit("attack", data);
    });
 
    client.on('end', function () {
       console.log("Game ended.  " + client.name + " lost.");
-      client.broadcast.emit("winner");
+      client.opponent.emit("winner");
       readyCount = 0;
    });
 
-   client.on('disconnect', function() {      
+   client.on('disconnect', function() { 
+      var i = allClients.indexOf(client);     
       clientCount--;      
       console.log("Client " + client.name + "disconnected. " + clientCount + " clients connected.");
+      allClients.splice(0, 1);
+      console.log("AllClients: " + allClients.length);
    })
 
    //client.emit('messages', {message: 'Hello ' + client.name + '!'});
@@ -77,3 +102,16 @@ app.get('/', function (req, res) {
 });
 
 server.listen(8080);
+
+function findOpponent(client) {
+   for (var i = 0; i < allClients.length; i ++)
+   {
+      var potentialOppenent = allClients[i];
+      if (client != potentialOppenent && !potentialOppenent.opponent)
+      {
+         console.log("Opponent found");
+         console.log(potentialOppenent.id);
+         return potentialOppenent;
+      }
+   }
+}
