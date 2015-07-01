@@ -12,13 +12,15 @@ var rotations = [
    [[[0,1], [0,1], [1,1]], [[0,0,0],[1,1,1],[0,0,1]], [[1,1],[1,0],[1,0]], [[1,0,0],[1,1,1]]], // orange j
    [[[0,1,0], [1,1,1]], [[0,1],[1,1],[0,1]], [[0,0,0],[1,1,1],[0,1,0]], [[1,0],[1,1],[1,0]]] // purple t
 ];
-var KEY = {LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ROTATERIGHT: 70, ROTATELEFT: 68}
+var KEY = {LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ROTATERIGHT: 70, ROTATELEFT: 68, HOLD:32}
 
 var board;
 var myBattleGrid = Array.apply(null, Array.apply(null, Array(3)));
 var oppBattleGrid;
 
 var piece;
+var heldPiece;
+var canHold = true;
 var xOffset = 4;
 var yOffset = 0;
 var timer;
@@ -31,6 +33,7 @@ var battleGridX = 0;
 var battleGridY = 0;
 var numRobots = 5;
 var placedRobots = 0;
+
 
 var socket = io.connect('http://192.168.0.10:8080');
 socket.on('connect', function (data) {
@@ -146,10 +149,10 @@ function drawRobotsOnGrid(grid, robots)
          if(robots[i][j])
          {
             grid.fillStyle = colors[robots[i][j].color];
-            grid.fillRect(j * 50 + 15, i * 50 + 15, 20, 20);
+            grid.fillRect(j * 50 + 10, i * 50 + 10, 30, 30);
             grid.font = "15px Arial";
             grid.fillStyle = "#000000"
-            grid.fillText(robots[i][j].life, j * 50 + 15, i * 50 + 30);
+            grid.fillText(robots[i][j].life, j * 50 + 10, i * 50 + 30);
          }
       }
    }
@@ -227,11 +230,29 @@ function keydown(ev) {
          case KEY.UP:     dropPiece();    handled = true; break;
          case KEY.DOWN:   movePieceDown();  handled = true; break;     
          case KEY.ROTATERIGHT: rotatePiece(-1);  handled = true; break;
-         case KEY.ROTATELEFT: rotatePiece(1); handled = true; break;     
+         case KEY.ROTATELEFT: rotatePiece(1); handled = true; break; 
+         case KEY.HOLD: holdPiece(); handled = true; break;    
       }
    }      
    if (handled)
       ev.preventDefault(); // prevent arrow keys from scrolling the page (supported in IE9+ and all other browsers)
+}
+
+function holdPiece() {
+   if (!canHold)
+      return;
+
+   canHold = false;
+   window.clearInterval(timer);
+   tempPiece = heldPiece;
+   console.log("Temp Piece: ");
+   console.log(tempPiece);
+   heldPiece = piece;
+   console.log("Hold Piece:");
+   console.log(heldPiece);
+   drawHoldPiece();
+   clearPiece();
+   startNewPiece(tempPiece);
 }
 
 function startFallingPiece() {
@@ -246,6 +267,7 @@ function dropPiece() {
 function movePieceDown() {
    if (!movePiece(0, 1))
    {
+      canHold = true;
       window.clearInterval(timer);
       addPieceToBoard();
       //check cleared lines
@@ -258,13 +280,18 @@ function movePieceDown() {
          return false;;
       }
 
-      piece = getNextPiece();
-      xOffset = 4;
-      yOffset = 0;
-      startFallingPiece();
+      startNewPiece();
       return false;
    }
    return true;
+}
+
+function startNewPiece(newPiece)
+{
+      piece = newPiece || getNextPiece();
+      xOffset = 4;
+      yOffset = 0;
+      startFallingPiece();
 }
 
 function movePiece(changeX, changeY) {
@@ -331,6 +358,14 @@ function drawPiece(canvas, piece, xOffset, yOffset, scale)
             drawBlock(canvas, x + xOffset, y + yOffset, piece.color, scale);
       }
    }
+}
+
+function drawHoldPiece()
+{
+   console.log("drawing hold piece");
+   var canvas = getHoldCanvas();
+   canvas.clearRect(0, 0, 100, 120);
+   drawPiece(getHoldCanvas(), heldPiece, 1, 1, .5);
 }
 
 function canPieceMove(changeX, changeY)
@@ -725,6 +760,13 @@ function logBoard() {
 function getPreviewCanvas()
 {
    var c = document.getElementById("piecePreview");
+   var ctx = c.getContext("2d");
+   return ctx;
+}
+
+function getHoldCanvas()
+{
+   var c = document.getElementById("holdPiece");
    var ctx = c.getContext("2d");
    return ctx;
 }
