@@ -226,8 +226,8 @@ function gridClicked(event) {
    var myGrid = document.getElementById("myBattleGrid");
 
    var position = this.getBoundingClientRect();
-   var a = Math.floor((event.pageX - position.left)/50);
-   var b = Math.floor((event.pageY - position.top)/50);
+   var a = Math.floor((event.clientX - position.left)/50);
+   var b = Math.floor((event.clientY - position.top)/50);
 
    myBattleGrid[b][a] = {id: placedRobots, color: placedRobots, life: 100};
    drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
