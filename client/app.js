@@ -2,7 +2,7 @@
 var tetriminoSize = 40;
 var boardHeight = 16;
 var colors = ["#E60000", "#00E600", "#FFFF47", "#75FFFF", "#0033CC", "#FF9933", "#CC33FF"];
-var images = ["redTetrimino.jpg", "greenTetrimino.jpg", "yellowTetrimino.jpg", "tealTetrimino.jpg", "blueTetrimino.jpg", "orangeTetrimino.jpg", "purpleTetrimino.jpg"];
+var images = ["redTetrimino.jpg", "greenTetrimino.jpg", "yellowTetrimino.jpg", "tealTetrimino.jpg", "blueTetrimino.jpg", "orangeTetrimino.jpg", "purpleTetrimino.jpg", "grayTetrimino.jpg"];
 var rotations = [
    [[[1,1,0], [0,1,1]], [[0,1],[1,1],[1,0]]], // red z
    [[[0,1,1], [1,1,0]], [[1,0],[1,1],[0,1]]], // green s
@@ -255,8 +255,8 @@ function holdPiece() {
    startNewPiece(tempPiece);
 }
 
-function startFallingPiece() {
-   drawPiece(getGameBoard(), piece, xOffset, yOffset);
+function startFallingPiece() {   
+   drawPiece(getGameBoard(), piece, xOffset, yOffset, 1, findShadowLocation());
    timer = window.setInterval(movePieceDown, 1000);
 }
 
@@ -295,12 +295,12 @@ function startNewPiece(newPiece)
 }
 
 function movePiece(changeX, changeY) {
-   if (canPieceMove(changeX, changeY))
+   if (canPieceMove(xOffset, yOffset, changeX, changeY))
    {
       clearPiece(piece, xOffset, yOffset);
       yOffset += changeY;
       xOffset += changeX;
-      drawPiece(getGameBoard(), piece, xOffset, yOffset);
+      drawPiece(getGameBoard(), piece, xOffset, yOffset, 1, findShadowLocation());
       return true;
    }
    return false;  
@@ -317,7 +317,7 @@ function rotatePiece(direction) {
    clearPiece();
    piece.shape = rotations[piece.color][newRotationIndex];
    piece.rotationIndex = newRotationIndex;
-   drawPiece(getGameBoard(), piece, xOffset, yOffset);
+   drawPiece(getGameBoard(), piece, xOffset, yOffset, 1, findShadowLocation());
 }
 
 function clearBlock(x, y) {
@@ -332,7 +332,10 @@ function clearPiece()
       for(var x = 0; x < piece.shape[y].length; x++)
       {
          if (piece.shape[y][x] == 1)
+         {
             clearBlock(x + xOffset, y + yOffset);
+            clearBlock(x + xOffset, y + findShadowLocation());
+         }   
       }
    }
 }
@@ -345,7 +348,7 @@ function drawBlock(canvas, x, y, colorIndex, scale) {
       canvas.drawImage(img, x * tetriminoSize * scale, y * tetriminoSize * scale, tetriminoSize * scale, tetriminoSize * scale);
 }
 
-function drawPiece(canvas, piece, xOffset, yOffset, scale)
+function drawPiece(canvas, piece, xOffset, yOffset, scale, shadowOffset)
 {
    //console.log("Drawing piece to scale: " + scale);
    scale = scale || 1;
@@ -355,7 +358,12 @@ function drawPiece(canvas, piece, xOffset, yOffset, scale)
       for(var x = 0; x < piece.shape[y].length; x++)
       {
          if (piece.shape[y][x] == 1)
+         {
             drawBlock(canvas, x + xOffset, y + yOffset, piece.color, scale);
+            
+            if (shadowOffset && shadowOffset != yOffset)
+               drawBlock(canvas, x + xOffset, y + shadowOffset, 7, scale);
+         }   
       }
    }
 }
@@ -368,23 +376,23 @@ function drawHoldPiece()
    drawPiece(getHoldCanvas(), heldPiece, 1, 1, .5);
 }
 
-function canPieceMove(changeX, changeY)
+function canPieceMove(xOffset, yOffset, changeX, changeY)
 {
    var bottom = yOffset + piece.shape.length;
    var right = xOffset + piece.shape[0].length;
-
-   if (bottom >= boardHeight)
+   
+   if (bottom >= boardHeight && changeY > 0)
       return false;
    else if (changeX > 0 && right >= 10)
       return false;
    else if (changeX < 0 && xOffset <= 0)
       return false;
-   else if (detectPieceCollision(changeX, changeY))
+   else if (detectPieceCollision(xOffset, yOffset, changeX, changeY))
       return false;
    return true;
 }
 
-function detectPieceCollision(changeX, changeY)
+function detectPieceCollision(xOffset, yOffset, changeX, changeY)
 {
    for(var y = 0; y < piece.shape.length; y++)
    {
@@ -401,6 +409,15 @@ function detectPieceCollision(changeX, changeY)
       }
    }   
    return false;
+}
+
+function findShadowLocation() {
+   var y = yOffset;
+   while(canPieceMove(xOffset, y, 0, 1))
+   {
+      y++;
+   }
+   return y;
 }
 
 function addPieceToBoard()
