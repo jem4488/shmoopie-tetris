@@ -24,6 +24,8 @@ var canHold = true;
 var xOffset = 4;
 var yOffset = 0;
 var timer;
+var startTimer;
+var waitTime = 5;
 var playing = false;
 var totalLinesCleared = 0;
 var pieces = [];
@@ -42,6 +44,20 @@ socket.on('connect', function (data) {
    socket.emit('join', name);
 });
 
+socket.on('opponentReady', function (data) {
+   console.log("Oppoent is ready, waiting for you to place robots");
+   $('#message').text(data + "is ready to begin. Please finish placing your robots.");
+});
+
+socket.on('waiting', function (data) {
+   console.log("Waiting for opponent");
+   $('#message').text("Waiting for opponent to place their robots.");
+});
+
+socket.on('startGame', function (data) {
+   startTimer = window.setInterval(decreaseWait, 1000);
+})
+
 socket.on('updateOpponentInfo', function (data) {
    console.log("Received message from opponent");
    console.log(data);
@@ -58,14 +74,15 @@ socket.on('battlePositions', function (data) {
 socket.on('attack', function (data) {
    console.log("Received attack");
    processAttack(data.attacks);
-})
+});
 
 socket.on('winner', function () {
    window.clearInterval(timer);
    console.log("Removing event listeners");
    document.removeEventListener("keydown", keydown);
-   $("#message").text("You are the winner!!");
-})
+   $("#message").attr('class', 'won').text("You are the winner!!");
+   socket.emit('disconnect');
+});
 
 $(document).ready(function() {
    drawBattleGrids();
@@ -76,6 +93,20 @@ $(document).ready(function() {
    battleGridY = position.top;
    myBattleGrid = initializeBattleGrid();
 });
+
+function decreaseWait() {
+   console.log("Decreasing wait time from " + waitTime);
+   if (waitTime > 0)
+   {
+      $("#message").text("Game will be starting in " + waitTime + " seconds.");
+   }   
+   else 
+   {
+      window.clearInterval(startTimer);
+      startGame();
+   }   
+   waitTime--;
+}
 
 function processAttack(attackData)
 {
@@ -112,7 +143,8 @@ function endGame() {
    console.log("Removing event listeners");
    document.removeEventListener("keydown", keydown);
    socket.emit('end');
-   $("#message").text("Sorry, you have lost!");
+   $("#message").attr('class', 'lost').text("Sorry, you have lost!");
+   socket.emit('disconnect');
 }
 
 function findPositionById(id) {
@@ -200,6 +232,11 @@ function gridClicked(event) {
    drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
    console.log(myBattleGrid);
    placedRobots++;
+}
+
+function readyToStartGame() {
+   socket.emit('ready');
+   $("#play").prop('disabled', true);
 }
 
 function startGame() {   
@@ -380,7 +417,7 @@ function canPieceMove(xOffset, yOffset, changeX, changeY)
 {
    var bottom = yOffset + piece.shape.length;
    var right = xOffset + piece.shape[0].length;
-   
+
    if (bottom >= boardHeight && changeY > 0)
       return false;
    else if (changeX > 0 && right >= 10)

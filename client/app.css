@@ -16,9 +16,6 @@ h2 {
    font-size: 30px;
    font-weight: 100;
    text-align: center;
-   color: white;
-   width: 700px;
-   margin: 0 auto;
 }
 
 div{
@@ -40,4 +37,12 @@ button {
    margin-bottom: 0px;
    margin-left: -105px;
 
+}
+
+.won {
+   color: green;
+}
+
+.lost {
+   color: red;
 }
