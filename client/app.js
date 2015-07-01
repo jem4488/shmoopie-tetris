@@ -81,7 +81,6 @@ socket.on('winner', function () {
    console.log("Removing event listeners");
    document.removeEventListener("keydown", keydown);
    $("#message").attr('class', 'won').text("You are the winner!!");
-   socket.emit('disconnect');
 });
 
 $(document).ready(function() {
@@ -144,7 +143,6 @@ function endGame() {
    document.removeEventListener("keydown", keydown);
    socket.emit('end');
    $("#message").attr('class', 'lost').text("Sorry, you have lost!");
-   socket.emit('disconnect');
 }
 
 function findPositionById(id) {
@@ -224,9 +222,12 @@ function transposeOpponentsGrid(data) {
 function gridClicked(event) {
    if (placedRobots >= numRobots)
       return;
-   
-   var a = Math.floor((event.pageX - battleGridX)/50);
-   var b = Math.floor((event.pageY - battleGridY)/50);
+
+   var myGrid = document.getElementById("myBattleGrid");
+
+   var position = this.getBoundingClientRect();
+   var a = Math.floor((event.pageX - position.left)/50);
+   var b = Math.floor((event.pageY - position.top)/50);
 
    myBattleGrid[b][a] = {id: placedRobots, color: placedRobots, life: 100};
    drawRobotsOnGrid(getMyBattleGrid(), myBattleGrid);
@@ -239,7 +240,8 @@ function readyToStartGame() {
    $("#play").prop('disabled', true);
 }
 
-function startGame() {   
+function startGame() {  
+   $("#message").text(""); 
    document.addEventListener('keydown', keydown, false);
    console.log("Starting board setup.")
    playing = true;
