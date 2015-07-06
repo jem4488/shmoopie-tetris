@@ -44,7 +44,7 @@ var selectedRobotType;
 var selectedRobotColor;
 
 
-var socket = io.connect('http://192.168.0.10:8080');
+var socket = io.connect('http://tardis:8080');
 socket.on('connect', function (data) {
    var name = prompt("What is your name?");
    $("#name").text(name);
