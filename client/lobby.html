@@ -5,22 +5,33 @@
 </head>
 
 <body>
-   <div id='main'>
-      <h1>Welcome to Battle Tetris</h2>
-      <div id='factory' onClick='goToFactory()'>
-         <h2>Factory</h2>
+   <div id='destinations'>
+      <h1>Welcome to the Lobby</h1>
+      <h3 id='name'></h3>
+      <div id='message'>
+         <h3 id='messageText'></h3>
       </div>
-      <div id='mine' onClick='goToMine()'>
-         <h2>Mine</h2>
-      </div>
-      <div id='archive' onClick='goToArchive()'>
+      <div id='archive' class='destination' onClick='collectSketch()'>
          <h2>Archive</h2>
+         <p id='archiveMessage'></p>
+      </div>      
+      <div id='mine' class='destination' onClick='collectShard()'>
+         <h2>Mine</h2>
+         <p id='mineMessage'></p>
       </div>
-      <div id='forge' onClick='goToForge()'>
+      <div class='clear'></div>
+      <div id='factory' class='destination' onClick='goToFactory()'>
+         <h2>Factory</h2>
+         <p>Build your robot army.</p>
+      </div>
+      <div id='forge' class='destination' onClick='goToForge()'>
          <h2>Forge</h2>
+         <p>Create gems and crystals.</p>
       </div>
-      <div id='coliseum' onClick='goToColiseum()'>
+      <div class='clear'></div>
+      <div id='coliseum' class='destination center' onClick='goToColiseum()'>
          <h2>Coliseum</h2>
+         <p>Battle to the death!</p>
       </div>
    </div>
 <script src="/jquery-2.1.4.min.js"></script>

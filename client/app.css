@@ -23,6 +23,12 @@ h2 {
    text-align: center;
 }
 
+h3 {
+   text-align: center;
+   font-weight: 50;
+   font-size: 18px;
+}
+
 div{
    padding: 10px;
 }
@@ -89,4 +95,37 @@ canvas {
 .robot-setup {
    /*margin-left: 43px;*/
    text-align: center;
+}
+
+.destination {
+   margin-top: 10px;
+   margin-left: 10px;
+   border: 1px solid #666666;
+   float: left;
+   width: 45%;
+   cursor: pointer;
+   background-color: #dddddd;
+   text-align: center;
+}
+
+.clear {
+   clear: both;
+   padding: 0px;
+}
+
+.center {
+   float: none;
+   margin: 10 auto;
+}
+
+input {   
+   display: block;
+   margin: 10 auto;
+}
+
+#login {
+   text-align: center;
+}
+#message {
+   height: 20px;
 }

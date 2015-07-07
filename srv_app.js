@@ -102,6 +102,12 @@ app.get('/lobby', function (req, res) {
    res.sendFile(__dirname + '/client/lobby.html');
 });
 
+app.get('/dailyResources', function (req, res) {
+   console.log("Daily resources requested.");
+   var resources = {shardCollected: true, sketchCollected: false};
+   res.json(resources);
+});
+
 app.get('/factory', function (req, res) {
    console.log("Page requested: factory");
    res.sendFile(__dirname + '/client/factory.html');
