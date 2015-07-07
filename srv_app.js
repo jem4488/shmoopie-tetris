@@ -82,16 +82,50 @@ io.on('connection', function(client) {
    });
 
    client.on('disconnect', function() { 
-      client.opponent.emit("winner");
+      if (client.opponent)
+         client.opponent.emit("winner");
+
       var i = allClients.indexOf(client);     
 
       console.log("Client " + client.name + "disconnected. " + allClients.length + " clients connected.");
       allClients.splice(0, 1);
    })
 });
+
 app.get('/', function (req, res) {
-   console.log("Page requested");
-   res.sendFile(__dirname + '/index.html');
+   console.log("Page requested: login");
+   res.sendFile(__dirname + '/client/login.html');
+});
+
+app.get('/lobby', function (req, res) {
+   console.log("Page requested: lobby");
+   res.sendFile(__dirname + '/client/lobby.html');
+});
+
+app.get('/factory', function (req, res) {
+   console.log("Page requested: factory");
+   res.sendFile(__dirname + '/client/factory.html');
+});
+
+app.get('/mine', function (req, res) {
+   console.log("Page requested: mine");
+   res.sendFile(__dirname + '/client/mine.html');
+});
+
+app.get('/archive', function (req, res) {
+   console.log("Page requested: archive");
+   res.sendFile(__dirname + '/client/archive.html');
+});
+
+app.get('/forge', function (req, res) {
+   console.log("Page requested: forge");
+   res.sendFile(__dirname + '/client/forge.html');
+});
+
+app.get('/coliseum', function (req, res) {
+   console.log("Page requested: coliseum");
+   //console.log(req.query.name);
+   res.sendFile(__dirname + '/client/play.html');
 });
 
 server.listen(8080);

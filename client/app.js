@@ -46,7 +46,8 @@ var selectedRobotColor;
 
 var socket = io.connect('http://tardis:8080');
 socket.on('connect', function (data) {
-   var name = prompt("What is your name?");
+   //var name = prompt("What is your name?");
+   var name = sessionStorage.getItem('name');
    $("#name").text(name);
    socket.emit('join', name);
 });
