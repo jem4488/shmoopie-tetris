@@ -1,3 +1,5 @@
+var pg = require('pg');
+var conString = "postgres://postgres:PostgresAdmin$$@localhost/postgres";
 var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
@@ -103,9 +105,9 @@ app.get('/lobby', function (req, res) {
 });
 
 app.get('/dailyResources', function (req, res) {
-   console.log("Daily resources requested.");
-   var resources = {shardCollected: true, sketchCollected: false};
-   res.json(resources);
+   console.log("Daily resources requested for " + req.query.name);
+   var resources = getDailyResources(req.query.name, res);//{shardCollected: false, sketchCollected: false};
+   console.log("After calling getDailyResources()");
 });
 
 app.get('/factory', function (req, res) {
@@ -113,9 +115,23 @@ app.get('/factory', function (req, res) {
    res.sendFile(__dirname + '/client/factory.html');
 });
 
+app.get('/collectSketch', function (req, res) {
+   console.log("Sketch requested");
+   var sketch = getRandomSketch();
+   // save shard to user data
+   res.json(sketch);
+});
+
 app.get('/mine', function (req, res) {
    console.log("Page requested: mine");
    res.sendFile(__dirname + '/client/mine.html');
+});
+
+app.get('/collectShard', function (req, res) {
+   console.log("Shard requested");
+   var shard = getRandomShard();
+   // save shard to user data
+   res.json(shard);
 });
 
 app.get('/archive', function (req, res) {
@@ -147,4 +163,50 @@ function findOpponent(client) {
          return potentialOppenent;
       }
    }
+}
+
+function getDailyResources(name, res) {
+   var pgClient = new pg.Client(conString);
+   var lastShardReceived;
+   var lastSketchReceived;
+   //var response = res;
+   pgClient.connect(function(err) {
+      if (err) {
+         return console.error('Could not connect');
+      }
+      pgClient.query("SELECT * FROM Competitor WHERE UserName = '" + name + "'", function(err, result) {
+         if (err) {
+            console.error(err);
+            return console.error('Error running query');
+         }
+         console.log(result.rows[0]);
+         var today = new Date();
+         console.log(today);
+         if (result.rows[0])
+         {
+            lastSketchReceived = new Date(result.rows[0].lastsketchacquired);
+            lastShardReceived = new Date(result.rows[0].lastshardacquired);
+            console.log("Sketch: " + lastSketchReceived);
+            console.log("Shard: " + lastShardReceived);
+         }
+         pgClient.end();
+
+         var now = new Date();
+         var diff = Math.abs(now - lastSketchReceived);
+         var sketchReceived = diff < 86400000;
+
+         diff = Math.abs(now - lastSketchReceived);
+         var shardReceived = diff < 86400000;
+         //console.log(response);
+         res.json({shardCollected: shardReceived, sketchCollected: sketchReceived});
+      });
+   });
+};
+
+function getRandomShard() {
+   return {color: 'blue'};
+};
+
+function getRandomSketch() {
+   return {type: 'Gladiator', seqNum: 1};
 }
