@@ -8,6 +8,11 @@ app.use(express.static('client'));
 
 var allClients = [];
 
+var maxRobotTypeId = 4;
+var maxSequenceNum = 6;
+var maxColor = 7;
+var maxMinedResourceTypeId = 3;
+
 
 /*io.on('connection', function(client) {
    client.on('messages', function (data) {
@@ -101,7 +106,8 @@ app.get('/', function (req, res) {
 
 app.get('/lobby', function (req, res) {
    console.log("Page requested: lobby");
-   res.sendFile(__dirname + '/client/lobby.html');
+   //create user if necessary
+   verfiyUserAndRespond(req.query.name, res);   
 });
 
 app.get('/dailyResources', function (req, res) {
@@ -115,11 +121,15 @@ app.get('/factory', function (req, res) {
    res.sendFile(__dirname + '/client/factory.html');
 });
 
+app.get('/sketchResources', function (req, res) {
+   console.log("Page requested: sketchResources");
+   getSketchResourcesAndRespond(req.query.name, res);
+});
+
 app.get('/collectSketch', function (req, res) {
    console.log("Sketch requested");
    var sketch = getRandomSketch();
-   // save shard to user data
-   res.json(sketch);
+   saveSketchAndRespond(req.query.name, sketch, res);
 });
 
 app.get('/mine', function (req, res) {
@@ -129,9 +139,9 @@ app.get('/mine', function (req, res) {
 
 app.get('/collectShard', function (req, res) {
    console.log("Shard requested");
-   var shard = getRandomShard();
-   // save shard to user data
-   res.json(shard);
+   var colorId = getRandomColor();
+   saveShardAndRespond(req.query.name, colorId, res);
+   //res.json(shard);
 });
 
 app.get('/archive', function (req, res) {
@@ -142,6 +152,11 @@ app.get('/archive', function (req, res) {
 app.get('/forge', function (req, res) {
    console.log("Page requested: forge");
    res.sendFile(__dirname + '/client/forge.html');
+});
+
+app.get('/minedResources', function (req, res) {
+   console.log("Page requested: minedResources");
+   getMinedResourcesAndRespond(req.query.name, res);
 });
 
 app.get('/coliseum', function (req, res) {
@@ -194,19 +209,167 @@ function getDailyResources(name, res) {
          var now = new Date();
          var diff = Math.abs(now - lastSketchReceived);
          var sketchReceived = diff < 86400000;
+         console.log(diff);
 
-         diff = Math.abs(now - lastSketchReceived);
+         diff = Math.abs(now - lastShardReceived);
          var shardReceived = diff < 86400000;
+         console.log(diff);
          //console.log(response);
          res.json({shardCollected: shardReceived, sketchCollected: sketchReceived});
       });
    });
 };
 
-function getRandomShard() {
-   return {color: 'blue'};
+function verfiyUserAndRespond(username, response) {
+   var pgClient = new pg.Client(conString);
+   
+   pgClient.connect(function(err) {
+      if (err) {
+         return console.error('Could not connect');
+      }
+      pgClient.query("INSERT INTO Competitor (username, LastSketchAcquired, LastShardAcquired) "
+         + "SELECT '" + username + "', '2000-01-01', '2000-01-01' "
+         + "WHERE NOT EXISTS ("
+            + "SELECT UserName FROM Competitor WHERE UserName = '" + username + "');", function(err, result) {
+         if (err) {
+            console.error(err);
+            return console.error('Error running query');
+         }
+         
+         pgClient.end();
+         
+         response.sendFile(__dirname + '/client/lobby.html');
+      });
+   });
+};
+
+function getRandomColor() {
+   return Math.floor(Math.random() * 1000) % maxColor;
 };
 
 function getRandomSketch() {
-   return {type: 'Gladiator', seqNum: 1};
-}
+
+   return {typeId: Math.floor(Math.random() * 1000) % maxRobotTypeId + 1, seqNum: Math.floor(Math.random() * 1000) % maxSequenceNum + 1};
+};
+
+function saveShardAndRespond(username, colorId, response) {
+   var pgClient = new pg.Client(conString);
+
+   pgClient.connect(function(err) {
+      if (err) {
+         return console.error('Could not connect');
+      }
+      pgClient.query(
+         "INSERT INTO MinedResource (CompetitorID, MinedResourceTypeID, Color) "
+         + "(SELECT C.CompetitorID, 1, " + colorId 
+         + " FROM Competitor C "
+         + "WHERE UserName = '" + username + "');", function(err, result) {
+
+        /* pgClient.query("INSERT INTO MinedResource (CompetitorID, MinedResourceTypeID, Color) (
+SELECT C.CompetitorID, 1, " + colorId + "
+FROM Competitor C
+WHERE UserName = '" + username + "');", function(err, result) {*/
+         if (err) {
+            console.error(err);
+            return console.error('Error running query');
+         }
+
+         pgClient.query("UPDATE Competitor " 
+            + "SET LastShardAcquired = current_date "
+            + "WHERE UserName = '" + username + "';", function (err, result) {
+               if (err) {
+                  console.error(err);
+                  return console.error('Error running query');
+               }
+
+               pgClient.end();      
+               response.json({color: colorId});
+         });
+      });
+   });
+};
+
+function saveSketchAndRespond(username, sketch, response) {
+   var pgClient = new pg.Client(conString);
+
+   pgClient.connect(function(err) {
+      if (err) {
+         return console.error('Could not connect');
+      }
+      pgClient.query(
+         "INSERT INTO Sketch (CompetitorID, RobotTypeID, SeqNum) "
+         + "(SELECT C.CompetitorID, " + sketch.typeId + ", " + sketch.seqNum 
+         + " FROM Competitor C "
+         + "WHERE UserName = '" + username + "');", function(err, result) {
+        
+         if (err) {
+            console.error(err);
+            return console.error('Error running query');
+         }
+
+         pgClient.query("UPDATE Competitor " 
+            + "SET LastSketchAcquired = current_date "
+            + "WHERE UserName = '" + username + "';", function (err, result) {
+               if (err) {
+                  console.error(err);
+                  return console.error('Error running query');
+               }
+
+               pgClient.end();      
+               response.json(sketch);
+         });
+      });
+   });
+};
+
+function getMinedResourcesAndRespond(userName, response) {
+   var pgClient = new pg.Client(conString);
+
+   pgClient.connect(function(err) {
+      if (err) {
+         return console.error('Could not connect');
+      }
+      pgClient.query(
+         "SELECT MinedResourceID, MinedResourceTypeID, Color, Used"
+         +" FROM MinedResource MR"
+         +"   INNER JOIN Competitor C ON MR.CompetitorID = C.CompetitorID"
+         +" WHERE C.UserName = '" + userName + "';", function(err, result) {
+        
+         if (err) {
+            console.error(err);
+            return console.error('Error running query');
+         }
+         
+         console.log(result.rows);
+         var rows = result.rows;
+         pgClient.end();
+         response.json(rows);         
+      });
+   });
+};
+
+function getSketchResourcesAndRespond(userName, response) {
+   var pgClient = new pg.Client(conString);
+
+   pgClient.connect(function(err) {
+      if (err) {
+         return console.error('Could not connect');
+      }
+      pgClient.query(
+         "SELECT SketchID, RobotTypeID, SeqNum"
+         +" FROM Sketch S"
+         +"   INNER JOIN Competitor C ON S.CompetitorID = C.CompetitorID"
+         +" WHERE C.UserName = '" + userName + "';", function(err, result) {
+        
+         if (err) {
+            console.error(err);
+            return console.error('Error running query');
+         }
+         
+         console.log(result.rows);
+         var rows = result.rows;
+         pgClient.end();
+         response.json(rows);         
+      });
+   });
+};

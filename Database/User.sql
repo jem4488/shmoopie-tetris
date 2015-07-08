@@ -1,6 +1,6 @@
 ﻿CREATE TABLE Competitor
 (
-   ID int PRIMARY KEY,
+   CompetitorID SERIAL PRIMARY KEY,
    UserName varchar(256),
    LastSketchAcquired date,
    LastShardAcquired date,
@@ -8,8 +8,10 @@
    Losses int DEFAULT(0)
 );
 
+DROP TABLE Competitor
+
 SELECT *
 FROM Competitor
 
-INSERT INTO Competitor (ID, UserName, LastSketchAcquired, LastShardAcquired)
-VALUES (1, 'jody', current_date, current_date)
+INSERT INTO Competitor (UserName, LastSketchAcquired, LastShardAcquired)
+VALUES ('jody', current_date, current_date)

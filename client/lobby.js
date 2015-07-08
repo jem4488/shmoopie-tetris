@@ -46,7 +46,7 @@ function collectShard() {
    if (!resources.shardCollected)
    {
       // request shard from server
-      $.getJSON('/collectShard')
+      $.getJSON('/collectShard?name=' + sessionStorage.getItem('name'))
          .done(function(data) {
             console.log(data);
             resources.shardCollected = true;
@@ -60,11 +60,11 @@ function collectSketch() {
    if (!resources.sketchCollected)
    {
       //request sketch from the server
-      $.getJSON('/collectSketch')
+      $.getJSON('/collectSketch?name=' + sessionStorage.getItem('name'))
          .done(function(data) {
             console.log(data);
             resources.sketchCollected = true;
-            $("#messageText").text("You received sketch " + data.seqNum + " for the " + data.type + " class robot.").fadeIn('fast').delay(3000).fadeOut();
+            $("#messageText").text("You received sketch " + data.seqNum + " for the " + data.typeId + " class robot.").fadeIn('fast').delay(3000).fadeOut();
             $("#archiveMessage").text("You have already received your daily sketch.");
          });
       
