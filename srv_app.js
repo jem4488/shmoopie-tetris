@@ -10,8 +10,10 @@ var allClients = [];
 
 var maxRobotTypeId = 4;
 var maxSequenceNum = 6;
-var maxColor = 7;
 var maxMinedResourceTypeId = 3;
+var maxColor = 2;
+var colorMapping = [0, 2, 4];
+var forgeRulesRBY = ['3,0,0', '0,1,2', '0,0,3', '0,2,1', '0,3,0', '2,0,1', '2,1,0'];
 
 
 /*io.on('connection', function(client) {
@@ -52,7 +54,7 @@ io.on('connection', function(client) {
    });
 
    client.on('ready', function() {
-      client.ready = true;
+      client.ready = true; 
       if (!client.opponent.ready)
       {
          client.opponent.emit("opponentReady", client.name);
@@ -139,7 +141,7 @@ app.get('/mine', function (req, res) {
 
 app.get('/collectShard', function (req, res) {
    console.log("Shard requested");
-   var colorId = getRandomColor();
+   var colorId = getRandomShardColor();
    saveShardAndRespond(req.query.name, colorId, res);
    //res.json(shard);
 });
@@ -153,6 +155,11 @@ app.get('/forge', function (req, res) {
    console.log("Page requested: forge");
    res.sendFile(__dirname + '/client/forge.html');
 });
+
+app.get('/forge/forgeRules', function (req, res) {
+   console.log("Page requested: forgeRules");
+   res.json(forgeRulesRBY);
+})
 
 app.get('/minedResources', function (req, res) {
    console.log("Page requested: minedResources");
@@ -243,8 +250,10 @@ function verfiyUserAndRespond(username, response) {
    });
 };
 
-function getRandomColor() {
-   return Math.floor(Math.random() * 1000) % maxColor;
+function getRandomShardColor() {
+   var rand = Math.floor(Math.random() * 1000) % maxColor;
+   console.log("Random color: " + rand);
+   return colorMapping[rand];
 };
 
 function getRandomSketch() {
@@ -330,9 +339,10 @@ function getMinedResourcesAndRespond(userName, response) {
          return console.error('Could not connect');
       }
       pgClient.query(
-         "SELECT MinedResourceID, MinedResourceTypeID, Color, Used"
+         "SELECT MR.MinedResourceID, MR.MinedResourceTypeID, MRTL.Name, MR.Color, MR.Used"
          +" FROM MinedResource MR"
          +"   INNER JOIN Competitor C ON MR.CompetitorID = C.CompetitorID"
+         +"   INNER JOIN MinedREsourceTypeLib MRTL ON MR.MinedResourceTypeID = MRTL.MinedResourceTypeID"
          +" WHERE C.UserName = '" + userName + "';", function(err, result) {
         
          if (err) {
@@ -356,9 +366,10 @@ function getSketchResourcesAndRespond(userName, response) {
          return console.error('Could not connect');
       }
       pgClient.query(
-         "SELECT SketchID, RobotTypeID, SeqNum"
+         "SELECT S.SketchID, S.RobotTypeID, RTL.Name, S.SeqNum"
          +" FROM Sketch S"
          +"   INNER JOIN Competitor C ON S.CompetitorID = C.CompetitorID"
+         +"   INNER JOIN RobotTypeLib RTL ON S.RobotTypeID = RTL.RobotTypeID"
          +" WHERE C.UserName = '" + userName + "';", function(err, result) {
         
          if (err) {
