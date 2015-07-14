@@ -5,7 +5,7 @@ var selection;
 
 function findResources(resources, colorId, typeId)
 {
-   return _.where(resources, {color: colorId, minedresourcetypeid: typeId});
+   return _.where(resources, {Color: colorId, MinedResourceTypeID: typeId});
 }
 
 function populateResourceList(resources, typeId)

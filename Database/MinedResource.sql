@@ -1,10 +1,10 @@
 ﻿CREATE TABLE MinedResource
 (
-   MinedResourceID SERIAL PRIMARY KEY,
+   MinedResourceID int IDENTITY PRIMARY KEY,
    CompetitorID int,
    MinedResourceTypeID int,
    Color int,
-   Used bit DEFAULT 0::bit
+   Used bit DEFAULT(0)
 );
 
 DROP TABLE MinedResource

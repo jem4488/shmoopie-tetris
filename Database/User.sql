@@ -1,6 +1,6 @@
 ﻿CREATE TABLE Competitor
 (
-   CompetitorID SERIAL PRIMARY KEY,
+   CompetitorID int IDENTITY PRIMARY KEY,
    UserName varchar(256),
    LastSketchAcquired date,
    LastShardAcquired date,
@@ -14,4 +14,4 @@ SELECT *
 FROM Competitor
 
 INSERT INTO Competitor (UserName, LastSketchAcquired, LastShardAcquired)
-VALUES ('jody', current_date, current_date)
+VALUES ('jody', SYSDATETIME(), SYSDATETIME())

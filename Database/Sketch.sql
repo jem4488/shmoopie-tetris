@@ -1,8 +1,7 @@
 ﻿CREATE TABLE Sketch
 (
-   SketchID SERIAL PRIMARY KEY,
+   SketchID int IDENTITY PRIMARY KEY,
    CompetitorID int,
    RobotTypeID int,
    SeqNum int
 );
-

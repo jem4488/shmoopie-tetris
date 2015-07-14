@@ -9,7 +9,7 @@ $(document).ready(function() {
       console.log(data);
       var resources = [];
       $.each(data, function(i, item) {
-         resources.push('<li>Type:' + item.name + 'Number:' + item.seqnum + '</li>');
+         resources.push('<li>Type:' + item.Name + ' Number:' + item.SeqNum + '</li>');
       });
       $('#resources').append(resources.join(''));
    });

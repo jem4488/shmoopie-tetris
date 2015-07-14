@@ -1,5 +1,16 @@
+var sql = require('mssql');
+var config = {
+   user: 'BattleBlocksAdmin',
+   password: 'BattleBlocksAdmin',
+   server: 'localhost',
+   database: 'BattleBlocks',
+};
+
+/*
 var pg = require('pg');
 var conString = "postgres://postgres:PostgresAdmin$$@localhost/postgres";
+*/
+
 var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
@@ -188,30 +199,32 @@ function findOpponent(client) {
 }
 
 function getDailyResources(name, res) {
-   var pgClient = new pg.Client(conString);
    var lastShardReceived;
    var lastSketchReceived;
    //var response = res;
-   pgClient.connect(function(err) {
+   var connection = new sql.Connection (config, function(err) {
       if (err) {
-         return console.error('Could not connect');
+         console.error('Could not connect: ' + err);
+         return;
       }
-      pgClient.query("SELECT * FROM Competitor WHERE UserName = '" + name + "'", function(err, result) {
+
+      var request = new sql.Request(connection);
+      request.query("SELECT * FROM Competitor WHERE UserName = '" + name + "'", function(err, recordset) {
          if (err) {
-            console.error(err);
-            return console.error('Error running query');
+            console.error("Error running query: " + err);
+            return;
          }
-         console.log(result.rows[0]);
+
          var today = new Date();
          console.log(today);
-         if (result.rows[0])
+         if (recordset[0])
          {
-            lastSketchReceived = new Date(result.rows[0].lastsketchacquired);
-            lastShardReceived = new Date(result.rows[0].lastshardacquired);
+            lastSketchReceived = new Date(recordset[0].LastSketchAcquired);
+            lastShardReceived = new Date(recordset[0].LastShardAcquired);
             console.log("Sketch: " + lastSketchReceived);
             console.log("Shard: " + lastShardReceived);
          }
-         pgClient.end();
+         connection.close();
 
          var now = new Date();
          var diff = Math.abs(now - lastSketchReceived);
@@ -228,22 +241,23 @@ function getDailyResources(name, res) {
 };
 
 function verfiyUserAndRespond(username, response) {
-   var pgClient = new pg.Client(conString);
-   
-   pgClient.connect(function(err) {
+   var connection = new sql.Connection (config, function(err) {
       if (err) {
-         return console.error('Could not connect');
+         console.error('Could not connect: ' + err);
+         return;
       }
-      pgClient.query("INSERT INTO Competitor (username, LastSketchAcquired, LastShardAcquired) "
+
+      var request = new sql.Request(connection);
+      request.query("INSERT INTO Competitor (username, LastSketchAcquired, LastShardAcquired) "
          + "SELECT '" + username + "', '2000-01-01', '2000-01-01' "
          + "WHERE NOT EXISTS ("
-            + "SELECT UserName FROM Competitor WHERE UserName = '" + username + "');", function(err, result) {
+            + "SELECT UserName FROM Competitor WHERE UserName = '" + username + "');", function(err, recordset) {
          if (err) {
-            console.error(err);
-            return console.error('Error running query');
+            console.error("Error running query: " + err);
+            return;
          }
          
-         pgClient.end();
+         connection.close();
          
          response.sendFile(__dirname + '/client/lobby.html');
       });
@@ -262,36 +276,37 @@ function getRandomSketch() {
 };
 
 function saveShardAndRespond(username, colorId, response) {
-   var pgClient = new pg.Client(conString);
-
-   pgClient.connect(function(err) {
+   var connection = new sql.Connection (config, function(err) {
       if (err) {
-         return console.error('Could not connect');
+         console.error('Could not connect: ' + err);
+         return;
       }
-      pgClient.query(
+
+      var request = new sql.Request(connection);
+      request.query(
          "INSERT INTO MinedResource (CompetitorID, MinedResourceTypeID, Color) "
          + "(SELECT C.CompetitorID, 1, " + colorId 
          + " FROM Competitor C "
-         + "WHERE UserName = '" + username + "');", function(err, result) {
+         + "WHERE UserName = '" + username + "');", function(err, recordset) {
 
         /* pgClient.query("INSERT INTO MinedResource (CompetitorID, MinedResourceTypeID, Color) (
 SELECT C.CompetitorID, 1, " + colorId + "
 FROM Competitor C
 WHERE UserName = '" + username + "');", function(err, result) {*/
          if (err) {
-            console.error(err);
-            return console.error('Error running query');
+            console.error("Error running query: " + err);
+            return;
          }
 
-         pgClient.query("UPDATE Competitor " 
-            + "SET LastShardAcquired = current_date "
-            + "WHERE UserName = '" + username + "';", function (err, result) {
+         request.query("UPDATE Competitor " 
+            + "SET LastShardAcquired = SYSDATETIME() "
+            + "WHERE UserName = '" + username + "';", function (err, recordset) {
                if (err) {
-                  console.error(err);
-                  return console.error('Error running query');
+                  console.error('Error running query' + err);
+                  return;
                }
 
-               pgClient.end();      
+               connection.close();     
                response.json({color: colorId});
          });
       });
@@ -299,32 +314,33 @@ WHERE UserName = '" + username + "');", function(err, result) {*/
 };
 
 function saveSketchAndRespond(username, sketch, response) {
-   var pgClient = new pg.Client(conString);
-
-   pgClient.connect(function(err) {
+   var connection = new sql.Connection (config, function(err) {
       if (err) {
-         return console.error('Could not connect');
+         console.error('Could not connect: ' + err);
+         return;
       }
-      pgClient.query(
+
+      var request = new sql.Request(connection);
+      request.query(
          "INSERT INTO Sketch (CompetitorID, RobotTypeID, SeqNum) "
          + "(SELECT C.CompetitorID, " + sketch.typeId + ", " + sketch.seqNum 
          + " FROM Competitor C "
-         + "WHERE UserName = '" + username + "');", function(err, result) {
+         + "WHERE UserName = '" + username + "');", function(err, recordset) {
         
          if (err) {
-            console.error(err);
-            return console.error('Error running query');
+            console.error("Error running query: " + err);
+            return;
          }
 
-         pgClient.query("UPDATE Competitor " 
-            + "SET LastSketchAcquired = current_date "
-            + "WHERE UserName = '" + username + "';", function (err, result) {
+         request.query("UPDATE Competitor " 
+            + "SET LastSketchAcquired = SYSDATETIME() "
+            + "WHERE UserName = '" + username + "';", function (err, recordset) {
                if (err) {
-                  console.error(err);
-                  return console.error('Error running query');
+                  console.error('Error running query' + err);
+                  return;
                }
 
-               pgClient.end();      
+               connection.close();     
                response.json(sketch);
          });
       });
@@ -332,55 +348,64 @@ function saveSketchAndRespond(username, sketch, response) {
 };
 
 function getMinedResourcesAndRespond(userName, response) {
-   var pgClient = new pg.Client(conString);
-
-   pgClient.connect(function(err) {
-      if (err) {
-         return console.error('Could not connect');
-      }
-      pgClient.query(
-         "SELECT MR.MinedResourceID, MR.MinedResourceTypeID, MRTL.Name, MR.Color, MR.Used"
+   var connection = new sql.Connection(config, function(err) {
+       if (err) {
+         console.log('Could not connect: ' + err);
+         return;
+       }
+       
+       var request = new sql.Request(connection); // or: var request = connection.request(); 
+       request.query("SELECT MR.MinedResourceID, MR.MinedResourceTypeID, MRTL.Name, MR.Color, MR.Used"
          +" FROM MinedResource MR"
          +"   INNER JOIN Competitor C ON MR.CompetitorID = C.CompetitorID"
          +"   INNER JOIN MinedREsourceTypeLib MRTL ON MR.MinedResourceTypeID = MRTL.MinedResourceTypeID"
-         +" WHERE C.UserName = '" + userName + "';", function(err, result) {
-        
-         if (err) {
-            console.error(err);
-            return console.error('Error running query');
-         }
-         
-         console.log(result.rows);
-         var rows = result.rows;
-         pgClient.end();
-         response.json(rows);         
-      });
-   });
+         +" WHERE C.UserName = '" + userName + "';", function(err, recordset) {
+
+           if (err) {
+               console.log("Error running query:" + err)
+               return;
+           }
+           console.log(recordset);
+           connection.close();
+           response.json(recordset);
+       });
+       
+       // Stored Procedure 
+       
+       /*var request = new sql.Request(connection);
+       request.input('input_parameter', sql.Int, 10);
+       request.output('output_parameter', sql.VarChar(50));
+       request.execute('procedure_name', function(err, recordsets, returnValue) {
+           // ... error checks 
+           
+           console.dir(recordsets);
+       });
+       */
+   });   
 };
 
 function getSketchResourcesAndRespond(userName, response) {
-   var pgClient = new pg.Client(conString);
-
-   pgClient.connect(function(err) {
+   var connection = new sql.Connection(config, function(err) {
       if (err) {
-         return console.error('Could not connect');
+         console.error('Could not connect: ' + err);
+         return;
       }
-      pgClient.query(
+      var request = new sql.Request(connection);
+      request.query(
          "SELECT S.SketchID, S.RobotTypeID, RTL.Name, S.SeqNum"
          +" FROM Sketch S"
          +"   INNER JOIN Competitor C ON S.CompetitorID = C.CompetitorID"
          +"   INNER JOIN RobotTypeLib RTL ON S.RobotTypeID = RTL.RobotTypeID"
-         +" WHERE C.UserName = '" + userName + "';", function(err, result) {
+         +" WHERE C.UserName = '" + userName + "';", function(err, recordset) {
         
          if (err) {
-            console.error(err);
-            return console.error('Error running query');
+            console.error('Error running query: ' + err);
+            return;
          }
          
-         console.log(result.rows);
-         var rows = result.rows;
-         pgClient.end();
-         response.json(rows);         
+         console.log(recordset);
+         connection.close();
+         response.json(recordset);         
       });
    });
 };
