@@ -139,3 +139,38 @@ input {
    float: left;
    height: 100%;
 }
+
+#shardResources {
+   text-align: center;
+}
+
+#shardResources li {
+   margin: 5px;
+   display: inline-block;
+   height: 50px;
+   width: 50px;
+   border: 1px solid #ffffff;
+}
+
+#shardForgeSelections {
+   text-align: center;
+}
+
+.forgeItem {
+   font-size: 40px;
+   margin: 5px;
+   border: 1px solid #666666;
+   height: 100px;
+   width:  100px;
+}
+
+.plus {
+   font-size: 40px;
+   margin: 5px;
+   padding: 0px;
+}
+
+.forgeButton {
+   display: block;
+   margin: 0 auto;
+}

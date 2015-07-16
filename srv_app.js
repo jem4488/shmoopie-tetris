@@ -12,10 +12,15 @@ var conString = "postgres://postgres:PostgresAdmin$$@localhost/postgres";
 */
 
 var express = require('express');
+var bodyParser = require('body-parser');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 app.use(express.static('client'));
+var parseJson = bodyParser.json();
+//app.use(bodyParser.json());
+
+//app.use(bodyParser.urlencoded({ extended: false }));
 
 var allClients = [];
 
@@ -170,11 +175,18 @@ app.get('/forge', function (req, res) {
 app.get('/forge/forgeRules', function (req, res) {
    console.log("Page requested: forgeRules");
    res.json(forgeRulesRBY);
-})
+});
 
 app.get('/minedResources', function (req, res) {
    console.log("Page requested: minedResources");
    getMinedResourcesAndRespond(req.query.name, res);
+});
+
+app.post('/forge/forgeGem', parseJson, function (req, res) {
+   console.log("Request: forgeGem");
+   //console.log(jsonParser);
+   console.log(req.body);
+   saveCreatedGemAndRespond(req.query.name, req.body, res);
 });
 
 app.get('/coliseum', function (req, res) {
@@ -408,4 +420,22 @@ function getSketchResourcesAndRespond(userName, response) {
          response.json(recordset);         
       });
    });
+};
+
+function saveCreatedGemAndRespond(userName, shards, response) {
+   if (shards.length != 3)
+      response.send({Status: 401});
+
+   if (!verfiyRecipe())
+      response.send({Status: 401});
+
+   //save gem
+
+
+
+   response.json({"text": "Hello"});
+};
+
+function verifyRecipe(shards) {
+
 };
