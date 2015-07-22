@@ -191,6 +191,13 @@ app.post('/forge/forgeGem', parseJson, function (req, res) {
    saveCreatedGemAndRespond(req.query.name, req.body, res);
 });
 
+app.post('/forge/forgeCrystal', parseJson, function (req, res) {
+   console.log("Request: forgeCrystal");
+   //console.log(jsonParser);
+   console.log(req.body);
+   saveCreatedCrystalAndRespond(req.query.name, req.body, res);
+});
+
 app.get('/coliseum', function (req, res) {
    console.log("Page requested: coliseum");
    //console.log(req.query.name);
@@ -515,5 +522,48 @@ function verifyRecipe(shards) {
    {
       console.log("No Rule Found");
       return undefined;
+   }
+};
+
+
+function saveCreatedCrystalAndRespond(userName, gems, response) {
+   if (gems.length != 3)
+   {   
+      response.send({Status: 401});
+   }
+   else
+   {
+      var color = gems[0].Color
+      var idList = gems[0].MinedResourceID + ", " + gems[1].MinedResourceID + ", " + gems[2].MinedResourceID;
+      console.log("IDList: " + idList);
+      var connection = new sql.Connection(config, function(err) {
+      if (err) {
+         console.error('Could not connect: ' + err);
+         return;
+      }
+      var request = new sql.Request(connection);
+      request.query(
+         "INSERT INTO MinedResource (CompetitorID, MinedResourceTypeID, Color) "
+         + "(SELECT C.CompetitorID, 3, " + color 
+         + " FROM Competitor C "
+         + " WHERE UserName = '" + userName + "');", function(err, recordset) {
+        
+         if (err) {
+            console.error('Error running query: ' + err);
+            return;
+         }
+
+         request.query("DELETE FROM MinedResource " 
+            + "WHERE MinedResourceID IN (" + idList + ");", function (err, recordset) {
+               if (err) {
+                  console.error('Error running query' + err);
+                  return;
+               }
+
+               connection.close();     
+               response.json("Crystal successfully created.");
+         });
+      });
+   });
    }
 };

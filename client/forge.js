@@ -1,6 +1,7 @@
 var shardResources;
 var usedShards = [];
 var gemResources;
+var selectedGemColor;
 var crystalResources;
 
 var selections = [];
@@ -33,9 +34,15 @@ function getListItems(list, type)
             resources.push("<li class='color-" + i + "' onClick='selectShardToForge(this)' style='background-image: url(../" + globalColorNameMapping[i] 
                + "Shard.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>Count: " + list[i].length + '</li>');
          }
+         else if (type == 'gem') {
+            resources.push("<li data-color='" + i + "' onClick='selectGem(this)' style='background-image: url(../" + globalColorNameMapping[i] 
+               + "Gem.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>Count: " 
+               + list[i].length + '</li>');
+         }
          else {   
-            resources.push("<li onClick='addSelectedClass(this)'>Color: " + i 
-               + ' (' + globalColorNameMapping[i] + '), Count: ' + list[i].length + '</li>');           
+            resources.push("<li style='background-image: url(../" + globalColorNameMapping[i] 
+               + "Crystal.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>Count: " 
+               + list[i].length + '</li>');          
          }
       }
          
@@ -123,23 +130,39 @@ function forgeGem()
    });   
 }
 
-/*function forgeCrystal()
+function selectGem(element) {
+   if (selectedGemColor)
+      $("#gemResources [data-color = " + selectedGemColor + "]").removeAttr('class');
+
+   selectedGemColor = $(element).attr('data-color');
+   $(element).attr('class', 'selected');
+}
+
+
+function forgeCrystal()
 {
-   if (usedGems.length != 3)
+   console.log("Forging Crystal");
+   console.log("Selected color: " + selectedGemColor);
+   console.log(gemResources[selectedGemColor]);
+
+   if (selectedGemColor == undefined || gemResources[selectedGemColor].length < 3)
       return;
+
+   var gems = gemResources[selectedGemColor].splice(0, 3);
+   console.log(gems);
 
    $.ajax({
      type: "POST",
      url: '/forge/forgeCrystal?name=' + sessionStorage.getItem('name'),
      contentType: 'application/json',
-     data: JSON.stringify(usedGems),
+     data: JSON.stringify(gems),
      success: function(data) {
          console.log(data);
          window.location.reload();
       },
      dataType: 'json'
    });   
-}*/
+}
 
 /*
 function addSelectedClass(element)
@@ -179,10 +202,10 @@ $(document).ready(function() {
       $('#shardResources').append(getListItems(shardResources, 'shard').join(''));
 
       gemResources = populateResourceList(data, 2);
-      $('#gemResources').append(getListItems(gemResources).join(''));
+      $('#gemResources').append(getListItems(gemResources, 'gem').join(''));
       
       crystalResources = populateResourceList(data, 3);
-      $('#crystalResources').append(getListItems(crystalResources).join(''));      
+      $('#crystalResources').append(getListItems(crystalResources, 'crystal').join(''));      
    });
 
    $.getJSON('/forge/forgeRules')
