@@ -3,6 +3,7 @@ var usedShards = [];
 var gemResources;
 var selectedGemColor;
 var crystalResources;
+var recipeMapping = [0, 4, 2];
 
 var selections = [];
 var shardImages = ['redShard.png', 'greenShard.png', 'yellowShard.png', 'tealShard.png', 'blueShard.png', 'orangeShard.png', 'purpleShard.png'];
@@ -32,16 +33,16 @@ function getListItems(list, type)
       {
          if (type == 'shard') {
             resources.push("<li class='color-" + i + "' onClick='selectShardToForge(this)' style='background-image: url(../" + globalColorNameMapping[i] 
-               + "Shard.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>Count: " + list[i].length + '</li>');
+               + "Shard.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>" + list[i].length + '</li>');
          }
          else if (type == 'gem') {
             resources.push("<li data-color='" + i + "' onClick='selectGem(this)' style='background-image: url(../" + globalColorNameMapping[i] 
-               + "Gem.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>Count: " 
+               + "Gem.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>" 
                + list[i].length + '</li>');
          }
          else {   
             resources.push("<li style='background-image: url(../" + globalColorNameMapping[i] 
-               + "Crystal.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>Count: " 
+               + "Crystal.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'>" 
                + list[i].length + '</li>');          
          }
       }
@@ -213,9 +214,30 @@ $(document).ready(function() {
       var rules = [];
       $.each(data, function (i, item) {
          console.log(item);
-         var parts = item.recipe.split(',');
-         rules.push('<li>Red: ' + parts[0] + ' Blue: ' + parts[1] + ' Yellow: ' + parts[2] + '</li>');
+         rules.push(createListItem(item));
       });
       $('#forgeRules').append(rules.join(''));
    });
 });
+
+function createListItem(item)
+{
+   var parts = item.recipe.split(',');
+
+   var li = "<li class='gemRecipe'><div style='background-image: url(../" + globalColorNameMapping[item.gemColor] 
+      + "Gem.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'></div>"
+      + ' = ';
+
+   for (var i = 0; i < parts.length; i++)
+   {
+      var partsLength = parts[i];
+      for(var j = 0; j < partsLength; j++)
+      {
+         li += "<div style='background-image: url(../" + globalColorNameMapping[recipeMapping[i]] 
+         + "Shard.png); background-repeat: no-repeat; background-position: center; background-size: 100% 100%'></div>";
+      }
+   }
+
+   li += '</li>';   
+   return li;
+}

@@ -150,6 +150,10 @@ input {
    height: 50px;
    width: 50px;
    border: 1px solid #ffffff;
+   padding: 0px;
+   line-height: 50px;
+   font-weight: 900;
+   text-shadow: 1px 1px #ffffff;
 }
 
 #gemResources {
@@ -162,6 +166,8 @@ input {
    height: 50px;
    width: 50px;
    border: 1px solid #ffffff;
+   padding: 0px;
+   line-height: 50px;
 }
 
 #gemResources .selected {
@@ -178,6 +184,8 @@ input {
    height: 50px;
    width: 50px;
    border: 1px solid #ffffff;
+   padding: 0px;
+   line-height: 50px;
 }
 
 #shardForgeSelections {
@@ -201,4 +209,10 @@ input {
 .forgeButton {
    display: block;
    margin: 0 auto;
+}
+
+.gemRecipe div{
+   display: inline-block;
+   width: 10px;
+   height: 10px;
 }
