@@ -115,10 +115,31 @@ function forgeGem()
      url: '/forge/forgeGem?name=' + sessionStorage.getItem('name'),
      contentType: 'application/json',
      data: JSON.stringify(usedShards),
-     success: function() {console.log("success");},
+     success: function(data) {
+         console.log(data);
+         window.location.reload();
+      },
      dataType: 'json'
-   });
+   });   
 }
+
+/*function forgeCrystal()
+{
+   if (usedGems.length != 3)
+      return;
+
+   $.ajax({
+     type: "POST",
+     url: '/forge/forgeCrystal?name=' + sessionStorage.getItem('name'),
+     contentType: 'application/json',
+     data: JSON.stringify(usedGems),
+     success: function(data) {
+         console.log(data);
+         window.location.reload();
+      },
+     dataType: 'json'
+   });   
+}*/
 
 /*
 function addSelectedClass(element)
@@ -169,7 +190,7 @@ $(document).ready(function() {
       var rules = [];
       $.each(data, function (i, item) {
          console.log(item);
-         var parts = item.split(',');
+         var parts = item.recipe.split(',');
          rules.push('<li>Red: ' + parts[0] + ' Blue: ' + parts[1] + ' Yellow: ' + parts[2] + '</li>');
       });
       $('#forgeRules').append(rules.join(''));

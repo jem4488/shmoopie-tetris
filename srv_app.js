@@ -29,7 +29,9 @@ var maxSequenceNum = 6;
 var maxMinedResourceTypeId = 3;
 var maxColor = 2;
 var colorMapping = [0, 2, 4];
-var forgeRulesRBY = ['3,0,0', '0,1,2', '0,0,3', '0,2,1', '0,3,0', '2,0,1', '2,1,0'];
+var forgeRulesRBY = [{recipe:'3,0,0', gemColor:0}, {recipe:'0,1,2', gemColor:1}, {recipe:'0,0,3', gemColor:2}, 
+                     {recipe:'0,2,1', gemColor:3}, {recipe:'0,3,0', gemColor:4}, {recipe:'2,0,1', gemColor:5}, 
+                     {recipe:'2,1,0', gemColor:6}];
 
 
 /*io.on('connection', function(client) {
@@ -426,16 +428,92 @@ function saveCreatedGemAndRespond(userName, shards, response) {
    if (shards.length != 3)
       response.send({Status: 401});
 
-   if (!verfiyRecipe())
+   var color = verifyRecipe(shards);
+   if (color == undefined)
       response.send({Status: 401});
+   else
+   {
+      var idList = shards[0].MinedResourceID + ", " + shards[1].MinedResourceID + ", " + shards[2].MinedResourceID;
+      console.log("IDList: " + idList);
+      var connection = new sql.Connection(config, function(err) {
+      if (err) {
+         console.error('Could not connect: ' + err);
+         return;
+      }
+      var request = new sql.Request(connection);
+      request.query(
+         "INSERT INTO MinedResource (CompetitorID, MinedResourceTypeID, Color) "
+         + "(SELECT C.CompetitorID, 2, " + color 
+         + " FROM Competitor C "
+         + " WHERE UserName = '" + userName + "');", function(err, recordset) {
+        
+         if (err) {
+            console.error('Error running query: ' + err);
+            return;
+         }
 
-   //save gem
+         request.query("DELETE FROM MinedResource " 
+            + "WHERE MinedResourceID IN (" + idList + ");", function (err, recordset) {
+               if (err) {
+                  console.error('Error running query' + err);
+                  return;
+               }
 
-
-
-   response.json({"text": "Hello"});
+               connection.close();     
+               response.json("Gem successfully created.");
+         });
+         
+         //console.log("RecordSet: " + recordset);
+         //connection.close();
+         //response.json(recordset);         
+      });
+   });
+      //response.json({"gemColor": color});
+   }
 };
 
 function verifyRecipe(shards) {
+   console.log("Logging Shards: ");
+   console.log(shards);
+   var red = 0;
+   var yellow = 0;
+   var blue = 0;
 
+   for(var i = 0; i < shards.length; i++)
+   {
+      var shardColor = shards[i].Color;
+      console.log("Shard color: " + shardColor);
+      if (shardColor == 0)
+         red++;
+      else if (shardColor == 2)
+         yellow++;
+      else if (shardColor == 4)
+         blue++;
+   }
+
+   var recipe = red + "," + blue + "," + yellow;
+   console.log("Recipe: " + recipe);
+   var index;
+   for (index = 0; index < forgeRulesRBY.length; index++)
+   {
+
+      console.log("Rule: " + forgeRulesRBY[index].recipe);
+      if (forgeRulesRBY[index].recipe == recipe)
+      {   
+
+         console.log("Found recipe at index " + index);
+         break;
+      }
+   }
+
+   if (index < forgeRulesRBY.length)
+   {
+      console.log("Rule Found");
+      return forgeRulesRBY[index].gemColor;
+   }
+   else
+   {
+      console.log("No Rule Found");
+      return undefined;
+   }
 };
